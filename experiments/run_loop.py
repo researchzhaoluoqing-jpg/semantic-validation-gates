@@ -46,7 +46,9 @@ def build():
 def push():
     build()
     os.environ["PYTHONUTF8"] = "1"
-    cmd([sys.executable, "-m", "kaggle", "kernels", "push", "-p", KDIR])
+    # T4 required: Kaggle's default P100 (sm_60) is unsupported by current torch builds
+    cmd([sys.executable, "-m", "kaggle", "kernels", "push", "-p", KDIR,
+         "--accelerator", "NvidiaTeslaT4"])
 
 
 def status():

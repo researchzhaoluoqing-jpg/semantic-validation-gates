@@ -37,7 +37,7 @@ warnings.filterwarnings("ignore")
 SEED = 42
 random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
 
-QUICK = os.environ.get("QUICK", "1") == "1"  # default flips per push: smoke vs full run
+QUICK = os.environ.get("QUICK", "0") == "1"  # default flips per push: smoke vs full run
 N_PER_DATASET = 20 if QUICK else 150
 GEN_MODEL = "Qwen/Qwen2.5-0.5B-Instruct" if QUICK else "Qwen/Qwen2.5-1.5B-Instruct"
 EMB_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
@@ -52,6 +52,8 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 OUT = "/kaggle/working/results" if os.path.isdir("/kaggle/working") else "./results"
 os.makedirs(f"{OUT}/plots", exist_ok=True)
 print(f"device={DEVICE} quick={QUICK} N={N_PER_DATASET} model={GEN_MODEL}")
+if DEVICE == "cuda":
+    print("GPU:", torch.cuda.get_device_name(0), "| capability:", torch.cuda.get_device_capability(0))
 
 # %% [markdown]
 # ## 1. Data — GSM8K (test) and TruthfulQA (generation)
@@ -271,7 +273,7 @@ def gate_values(E, fmt_ok, E_repair, E_fact, tox, comp, E_intent, keep=None):
     E: sentence embeddings (n,d); keep: retained indices for perturbations."""
     idx = list(range(len(E))) if keep is None else sorted(keep)
     X = E[idx]
-    f1 = 0.0 if fmt_ok and keep is None else w2(X, E_repair)
+    f1 = 0.0 if fmt_ok else w2(X, E_repair)
     f2 = w2(X, E_fact)
     f3, f3_parts = f3_from_components(comp, keep=set(idx) if keep is not None else None)
     safe = [i for i in idx if tox[i] < 0.5]
@@ -300,7 +302,7 @@ for k, it in enumerate(items):
     E_intent = embed([it["question"]] + split_sents(it["reference"]))
     g = gate_values(E, fmt_ok, E_repair, E_fact, tox, comp, E_intent)
     it["_cache"] = dict(E=E, fmt_ok=fmt_ok, E_repair=E_repair, E_fact=E_fact,
-                        tox=tox, comp=comp, E_intent=E_intent)
+                        tox=tox, comp=comp, E_intent=E_intent, sents=sents)
     records.append(dict(idx=k, dataset=it["dataset"], correct=bool(it["correct"]),
                         fmt_ok=bool(fmt_ok), tox_max=float(max(tox)),
                         n_sents=len(sents), **g))
@@ -326,11 +328,14 @@ n_cal = int(0.6 * len(valid_idx))
 cal_idx, held_idx = valid_idx[:n_cal], valid_idx[n_cal:]
 print(f"valid={len(valid_idx)} cal={len(cal_idx)} held={len(held_idx)}")
 
-def fit_tau(x, alpha):
-    """Fréchet (invweibull) tail quantile; empirical-quantile fallback."""
+def fit_tau(x, alpha, fallback=1.0):
+    """Fréchet (invweibull) tail quantile; empirical-quantile fallback.
+    Degenerate (all-zero on valid) gates get `fallback` — half the smallest
+    positive deviation observed anywhere — so any real violation still trips
+    the gate without exploding ρ numerically."""
     x = np.asarray(x, dtype=float)
     if x.max() - x.min() < 1e-9:
-        return float(x.max() + 1e-6), "degenerate"
+        return float(max(fallback, 1e-6)), "degenerate"
     try:
         c, loc, scale = stats.invweibull.fit(x[x > x.min()], floc=float(x.min()) - 1e-9)
         tau = float(stats.invweibull.ppf(1 - alpha, c, loc, scale))
@@ -340,11 +345,16 @@ def fit_tau(x, alpha):
         pass
     return float(np.quantile(x, 1 - alpha)), "empirical"
 
+floors = {}
+for g in GATES:
+    pos = df.loc[df[g] > 1e-9, g]
+    floors[g] = float(pos.min() / 2) if len(pos) else 1.0
+
 evt = {}
 for alpha in ALPHAS:
     taus, methods = {}, {}
     for g in GATES:
-        taus[g], methods[g] = fit_tau(df.loc[cal_idx, g].values, alpha)
+        taus[g], methods[g] = fit_tau(df.loc[cal_idx, g].values, alpha, fallback=floors[g])
     held = df.loc[held_idx, GATES]
     per_gate_rej = {g: float((held[g] / taus[g] > 1).mean()) for g in GATES}
     any_rej = float(((held / pd.Series(taus)) > 1).any(axis=1).mean())
@@ -396,6 +406,17 @@ with open(f"{OUT}/auroc.json", "w") as f:
 # ## 8. E4 — perturbation robustness (Conjectures 5.2 / 5.4)
 
 # %%
+def fmt_ok_effective(it, cache, keep):
+    """Re-evaluate format validity for a retained-sentence subset: dropping a
+    non-answer sentence must not count as a format violation."""
+    if keep is None:
+        return cache["fmt_ok"]
+    text = "\n".join(cache["sents"][i] for i in sorted(keep))
+    if it["dataset"] == "gsm8k":
+        return bool(GSM_FMT.search(text))
+    return len(text.strip()) > 0 and len(keep) <= 6
+
+
 def perturb_variants(cache):
     """Yield (name, E_perturbed_or_None, keep_indices_or_None)."""
     E = cache["E"]; n = len(E)
@@ -415,13 +436,14 @@ for k in sub:
     base = {f"rho_{i}": df.loc[k, f"rho_{i}"] for i in range(1, 6)}
     base_pi = df.loc[k, "Pi"]
     for name, Ep, keep in perturb_variants(c):
+        fok = fmt_ok_effective(it, c, keep)
         if Ep is not None and keep is None:
-            g = gate_values(Ep, c["fmt_ok"], c["E_repair"], c["E_fact"],
+            g = gate_values(Ep, fok, c["E_repair"], c["E_fact"],
                             c["tox"] + [0.0] * (len(Ep) - len(c["tox"])),
                             c["comp"], c["E_intent"])
             dist = w2(c["E"], Ep)
         else:
-            g = gate_values(c["E"], c["fmt_ok"], c["E_repair"], c["E_fact"],
+            g = gate_values(c["E"], fok, c["E_repair"], c["E_fact"],
                             c["tox"], c["comp"], c["E_intent"], keep=keep)
             dist = w2(c["E"], c["E"][sorted(keep)])
         rhos = {f"rho_{i}": g[f"f{i}"] / TAU[f"f{i}"] for i in range(1, 6)}

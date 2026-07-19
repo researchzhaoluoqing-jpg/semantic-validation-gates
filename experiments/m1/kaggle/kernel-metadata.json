@@ -1,0 +1,15 @@
+{
+  "id": "luoqingzhao/svg-m1-field-study",
+  "title": "SVG M1 Field Study",
+  "code_file": "svg_m1_field.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": ["luoqingzhao/svg-harness"],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

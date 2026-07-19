@@ -1,0 +1,615 @@
+=== PAGE 1 ===
+Semantic Validation Gates: A Computable, Statistically Calibrated
+Framework for Runtime Verification of Language-Model Outputs
+Luoqing Zhao
+Independent Researcher
+Consolidated manuscript (v3.1, “all-in” version) — July 2026
+Abstract
+As language models and autonomous agents produce long reasoning chains and consequen-
+tial decisions, deployment requires a verification layer that converts qualitative judgments—
+well-formed, factual, consistent, safe, on-task—into calibrated, auditable measurements. We
+present a five-gate runtime validation framework in which every object is computable from real
+model outputs and every guarantee is finite-sample with stated assumptions. The gates are:
+an exact edit-distance format gate; a calibrated-entailment fact gate with mandatory absten-
+tion; a logic gate built on a weighted cellular sheaf Laplacian over the extracted claim graph,
+unified with propositional constraints through a relax-and-certify architecture whose necessity
+we prove via a complexity-theoretic incompleteness result; a safety gate that is computationally
+independent of all parsing; and an intent gate whose aggregation form is forced by a dilution
+theorem. Thresholds are calibrated by conformal methods under three deployment regimes—
+exchangeable, covariate-shifted, and arbitrarily (adversarially) drifting—yielding end-to-end,
+instrument-inclusive false-rejection control. The decision layer evaluates all gates in parallel
+and grants alignment violations an unconditional veto, provably eliminating the masking of
+safety failures by lower-priority errors. A mechanism study on synthetic reasoning chains shows
+that as the distance k between a violation and the claim it contradicts grows, threshold-based
+contradiction counting collapses to chance (AUROC 0 .50 at k=5) while the sheaf energy de-
+grades gracefully (AUROC 0.97) and retains 83% top-1 localization where counting retains 0%.
+We position the framework as the missing theory layer for guardrail pipelines already deployed
+in production without statistical guarantees, and release a reference implementation and a pre-
+registered protocol for full empirical validation.
+1 Introduction
+1.1 Problem
+Production systems increasingly interpose guardrail pipelines between a language model and its con-
+sumers: stacks of validators for output structure, factuality, consistency, safety, and task adherence.
+These pipelines are effective engineering but carry no mathematical contract: which validator fires
+first is a configuration accident, error taxonomies are informal, and false-rejection rates are tuned by
+feel. Conversely, the academic literature supplies deep tools for individual dimensions—conformal
+factuality, consistency detection, safety classification, instruction-following evaluation—that do not
+talk to each other. This paper supplies the missing layer: a single formal system in which five
+validation dimensions are computable scores, thresholds carry finite-sample guarantees under ex-
+plicitly graded distributional assumptions, the induced error taxonomy is complete and mutually
+exclusive, and safety violations cannot be masked.
+1
+=== PAGE 2 ===
+An earlier version of this work (v1) proposed the same five-gate architecture wrapped in
+differential-geometric language—Wasserstein projections onto convex sets, ˇCech obstruction classes
+with Hodge norms, isometric embeddings of Wasserstein geometry into Hilbert spaces—that was
+not constructible; Appendix A records each defect and its repair. The present version retains the
+architecture and delivers it with objects that exist.
+1.2 Contributions
+1. Five gate scores f1, . . . , f5 (Format, Fact, Logic, Alignment, Intent), each with an explicit
+algorithm, estimator, and sensitivity analysis ( § 3).
+2. A logic gate built on a weighted cellular sheaf Laplacian over the extracted claim graph,
+unified with propositional constraints via relax-and-certify, together with an impossibility
+result (Prop. 3.3) explaining why a certification layer is unavoidable ( § 3.3).
+3. Calibration with finite-sample guarantees across three deployment regimes: split conformal
+under exchangeability, weighted conformal under estimable covariate shift, and adaptive con-
+formal inference whose long-run guarantee holds under arbitrary, including adversarial, drift
+(§ 4). The guarantees are instrument-inclusive: claim-extraction and NLI errors cannot inflate
+the false-rejection rate (Prop. 4.1).
+4. A decision architecture with unconditional parallel evaluation and a safety veto, provably
+immune to masking of alignment violations ( § 5), together with an anytime computational
+profile whose safety fast path is a single classifier forward pass ( § 5.4).
+5. A mechanism study demonstrating, under two documented assumptions about NLI behavior,
+a structural separation between the sheaf energy and the standard contradiction-counting
+baseline on transitive violations, including a localization capability the baseline lacks by
+construction (§ 6); and a pre-registered protocol for full empirical validation ( § 7).
+1.3 Design principles
+(P1) Every object is mathematically well-defined and computable from real model outputs. (P2)
+Every guarantee is finite-sample, with its assumptions stated next to it. (P3) Signals of localized or
+safety-critical violations are aggregated by max/veto, never by mean or minimal-index truncation.
+(P4) Anything not meeting P1–P2 is labeled a design choice or an open problem.
+1.4 Related work
+Each pillar has independent precedents; the contribution here is the certified composition. Sheaves
+for consistency: Huntsman, Robinson and Huntsman [14] demonstrated that LLMs produce usable
+numerical consistency ratings of claim pairs and proposed sheaf theory for lifting local ratings
+to global consistency of hypertexts, also noting the relevance of CNF-SAT; our § 3.3 differs in
+operating on a single output’s claim graph, weighting the Laplacian by calibrated NLI confidences
+with a proven sensitivity bound, and embedding the score in a calibrated gate rather than a stand-
+alone analysis. Conformal guarantees for LLMs: conformal factuality [16], conformal abstention
+for hallucination control [20], boosted and conditional variants [3], and conformal factuality under
+covariate shift via online density-ratio estimation [4] calibrate a single dimension; § 4 calibrates
+a five-dimensional gate vector jointly with family-wise control and a veto-aware fixed-sequence
+procedure. Guardrail pipelines: production frameworks (Guardrails AI, NeMo Guardrails [17], and
+2
+=== PAGE 3 ===
+similar) stack validators covering roughly our five dimensions but provide no statistical guarantees,
+no unified severity measure, and no masking analysis; this paper can be read as the theory layer
+for that architecture. Multi-dimensional evaluation suites such as HELM [13] systematize offline
+benchmark dimensions for scoring models; our object is different—runtime, per-output verification
+with per-instance guarantees and block/repair decisions.
+2 Output Representation
+Fix a deterministic encoder E : Σ∗ → Rd applied at unit level: an output y is segmented by a fixed
+procedure D into units (sentences or atomic claims) u1, . . . , um.
+Definition 2.1 (Output measure). ˆµy = 1
+m
+Pm
+j=1 δE(uj ) ∈ P(Rd).
+Assumption 1 (A1). ∥E(u)∥ ≤R for all units (normalized embeddings: R = 1).
+Assumption 2 (A2). All kernels are bounded ( supx k(x, x) ≤ K), measurable, and characteristic
+on the relevant domain.
+Assumption 3 (A3). Calibration and test outputs are exchangeable as raw texts. Used only where
+stated; § 4.4 removes it.
+A gate is a pair ( fi, τi) with measurable fi : Σ∗ → [0, ∞) and threshold τi > 0; write ρi(y) =
+fi(y)/τi, and gate i passes iff ρi(y) ≤ 1. The instrument I = ( D, NLI, E,graph builder) is fixed
+before calibration and treated as part of each fi; this matters for Prop. 4.1. No manifold, bundle, or
+Fisher-metric structure is assumed; everything downstream lives on ( Rd, ∥ · ∥) and on finite graphs.
+3 The Five Gates
+3.1 Format gate f1
+Let the structural specification be a formal language L(G) (context-free grammar, JSON-Schema
+compilation, or regular constraint set). Define
+f1(y) = dedit(y, L(G))
+|y| , d edit(y, L) = min
+z∈L
+dLev(y, z).
+For CFGs this is computable exactly by error-correcting Earley/CYK parsing [1] in O(|G|2|y|3);
+for regular L, by product-automaton shortest path in O(|A||y|). The gate is deterministic with
+zero estimation error, and f1(y) = 0 ⇐ ⇒y ∈ L(G). No Wasserstein projection is needed; the v1
+operator Proj Pform is replaced by an exact combinatorial minimization with a known algorithm.
+3.2 Fact gate f2
+Decompose y into claims c1, . . . , cm; retrieve evidence Ej from a verified knowledge base K; let sj be
+the calibrated entailment probability from an NLI model (isotonic or Platt calibration on held-out
+data; ECE reported). Per P3,
+f2(y) = 1 − min
+1≤j≤m
+sj,
+with a mandatory abstention state : when retrieval confidence for a claim falls below a floor, the
+output is routed to abstention rather than scored—an unverifiable claim must not receive a nu-
+merical pass. (This removes the v1 ambiguity in which kernel-smoothing of a reference measure
+3
+=== PAGE 4 ===
+silently interpolated over missing knowledge.) Optionally, against a reference sample from K one
+may use the Sinkhorn divergence Sε(ˆµy, ˆνfact), which metrizes weak convergence with dimension-
+robust sample complexity O(n−1/2) [7]; plug-in W2 degrades as O(n−1/d) [6] and is therefore not
+used anywhere in this paper.
+3.3 Logic gate f3: weighted sheaf Laplacian, unified energy, relax-and-certify
+Claim graph. G = (V, E): vertices are claims; an edge ( u, v) with relation type (entail / equiv
+/ contradict) is added when the NLI model flags it, carrying its calibrated confidence we ∈ [0, 1].
+W eighted sheaf. Attach to G a cellular sheaf F [12]: stalks F (v) = Rk (truth coordinates of
+claim v); restriction maps encode the relation (identity for entailment and equivalence, the negation
+lift t 7→ 1 − t for contradiction). With coboundary δ : C0 → C1 and W = diag(we), the weighted
+sheaf Laplacian is LF (w) = δ⊤W δ, and the raw score of an assignment x is ⟨x, LF (w)x⟩1/2: a
+finite-dimensional Hodge-type quantity, computable in O(|V |3) worst case and by sparse solvers
+in practice. Global sections ker δ = H 0(G; F ) are exactly the edge-consistent assignments, so the
+score measures the obstruction to gluing the asserted claims into a global section—the v1 intuition,
+now on a specified finite object.
+Proposition 3.1 (Lipschitz dependence on NLI confidences) . If ∥xv∥ ≤R and restriction maps
+have operator norm at most 1, then for confidence vectors w, w′,
+⟨x, LF (w)x⟩ − ⟨x, LF (w′)x⟩
+ ≤ 4R2∥w − w′∥1.
+Proof. The energy is P
+e we∥(δx)e∥2 with ∥(δx)e∥ ≤2R; subtract termwise.
+An out-of-distribution NLI perturbation therefore produces a bounded, quantified score pertur-
+bation, which composes with margin stability (Prop. 5.7); “garbage in, garbage out” is replaced by
+a sensitivity bound. The bound is verified numerically in the reference implementation.
+Unified logic energy . Propositional constraints enter as sheaf data: lift Boolean assignments
+to [0, 1] stalks on the factor graph of extracted constraints, with restriction maps encoding literal
+polarity; let X be the linear-relaxation polytope of the clauses. Define
+f3(y) = min
+x∈X
+x≡1 on asserted claims
+⟨x, LF (w) x⟩1/2.
+The objective is a convex piecewise quadratic; projected gradient or interior-point methods find
+the global minimum.
+Proposition 3.2 (Relaxation gap). (i) If the asserted constraint system is Boolean-satisfiable then
+f3(y) = 0. (ii) The converse fails in general: LP/SDP integrality-gap instances (e.g. MAX-2-SAT
+[10]) yield fractional zeros for unsatisfiable systems.
+Proof sketch. (i) A Boolean satisfying assignment lies in X and has zero residual on every edge by
+construction of the restriction maps. (ii) Standard gap instances embed directly.
+Proposition 3.3 (No exact polynomial unification) . A polynomial-time computable continuous
+score s with s(y) = 0 iff the asserted propositional system is Boolean-satisfiable would decide SAT
+in polynomial time. Hence, unless P = NP , every polynomial unified score is incomplete on the
+hard fragment.
+4
+=== PAGE 5 ===
+Relax-and-certify . Consequently a SAT/SMT certifier is retained—not as a parallel gate but
+as a certification layer: it verifies (rounds) near-zero relaxed optima and, on UNSAT, returns
+a deletion-minimal unsatisfiable core whose size is an exact, interpretable severity overriding a
+passing continuous score. The soft/hard dichotomy of earlier drafts dissolves into the standard
+relax-and-certify hierarchy of modern optimization. As a diagnostic, the edges carrying the largest
+weighted residual energy localize the inconsistency; localization is evaluated in § 6. A lattice-valued
+unification via the Tarski Laplacian [8] is recorded as Open Problem 8.1.
+3.4 Alignment gate f4
+f4(y) = σ−1(ˆpunsafe(y)): the logit of a safety classifier calibrated on held-out labels (ECE reported),
+composed with the conformal layer of § 4 so that a bounded false-rejection rate on safe outputs holds
+as a theorem. Computational independence (structural requirement): f4 operates on the raw text
+y and does not factor through D, the claim graph, or format parsing; a format-corrupted output
+therefore cannot even computationally block its own safety evaluation. Combined with the veto
+of § 5.2, the masking channel is closed at the dataflow level as well as the decision level. (The v1
+formulation—W2 projection onto a “compact convex set of safe behaviors”—is dropped: the set was
+never constructed and metric projection in positively curved Wasserstein space is not well-posed.)
+3.5 Intent gate f5
+Proposition 3.4 (MMD dilution). Let ˆµ, ˆµ′ be empirical measures on m units differing in exactly
+one unit, with kernel bound k ≤ K. Then MMDk(ˆµ, ˆµ′) ≤ 2
+√
+K/m.
+Proof. ψ(ˆµ) − ψ(ˆµ′) = 1
+m (ϕ(ej) − ϕ(e′
+j)) and ∥ϕ(·)∥ ≤
+√
+K.
+A fatal single-unit violation (one inserted negation) moves an aggregate-MMD score byO(1/m)—
+vanishing in long outputs. Hence, per P3,
+f5(y) = max
+ 
+f hard
+5 (y), fsoft
+5 (y)
+
+.
+Hard component (exact). Compile the instruction into programmatically checkable constraints
+{κℓ} (length, inclusion/exclusion, ordering—the IFEval regime [15]); f hard
+5 = maxℓ 1[κℓ violated].
+A single negation that flips a checkable constraint scores 1 regardless of m. Soft component (worst-
+unit, directed Hausdorff in feature space).
+f soft
+5 (y) = max
+j
+min
+r∈supp(νintent)
+ϕ(E(uj)) − ϕ(E(r))
+
+Hk
+,
+where νintent is the reference measure of the task objective.
+Proposition 3.5 (Unit-level sensitivity). If one unit lies at feature distance at least ∆ from the
+entire intent reference set, then f soft
+5 ≥ ∆, independently of m.
+The kernel mean embedding ψ(µ) =
+R
+ϕ dµis isometric with respect to MMD by construction,
+and MMD is a metric for characteristic k [11]. This replaces the v1 claim of an isometric RKHS
+embedding of the W2 geometry, which is impossible for d ≥ 3 [2]. Three honesty notes: (i)
+cross-encoder relevance scores are generally not positive semidefinite and may be used as raw
+scores, not kernels—conformal calibration is agnostic to the score’s provenance; (ii) the O(n−1/2)
+MMD concentration bound applies to the mean-embedding form; the max-form relies on conformal
+calibration for validity and on § 7 for empirical power; (iii) aggregate MMD is retained solely as a
+drift-monitoring feature (§ 4.4), where distribution-level sensitivity is exactly what is wanted.
+5
+=== PAGE 6 ===
+4 Calibration: Finite-Sample Guarantees Under Three Regimes
+4.1 The guarantee is instrument-inclusive
+Proposition 4.1 (Composite conformal validity) . Fix the instrument I before calibration and let
+fi = gi ◦ I. If calibration and test outputs are exchangeable as raw texts (A3), then Theorem 4.2
+below holds verbatim for the composite score.
+Proof. Exchangeability is preserved under a fixed measurable map applied identically to every
+element of the sequence; the rank argument of Theorem 4.2 then applies to the composite scores
+unchanged.
+Claim-extraction truncation and out-of-distribution NLI behavior therefore cannot inflate the
+false-rejection rate: instrument noise enters calibration and test exchangeably. What instrument
+error does affect is detection power (Type-II), quantified in § 4.5 and audited in § 7.
+4.2 Regime I — exchangeable deployment: split conformal
+With a calibration set of ni outputs certified valid on dimension i, set τi to the ⌈(ni + 1)(1− αi)⌉-th
+smallest calibration score.
+Theorem 4.2 (Distribution-free false-rejection control) . Under (A3), for a new valid output y,
+P(ρi(y) > 1) ≤ αi; if scores are almost surely distinct, also P(ρi(y) > 1) ≥ αi − 1
+ni+1 .
+Proof. By exchangeability, the rank of fi(y) among the ni + 1 scores is uniform on {1, . . . , ni + 1}
+(ties only help the upper bound). Exceedance of τi requires the rank to exceed ⌈(ni + 1)(1− αi)⌉, an
+event of probability at most αi; the lower bound follows from the same rank computation without
+ties.
+This is precisely the property v1’s “EVT conjecture” asked for, obtained as a three-line finite-
+sample theorem with no distributional assumptions. (Extreme-value refinements remain optional;
+note that all gate scores here are bounded, placing them in the Weibull, not Fr´ echet, max-domain
+of attraction [5]—any EVT use must carry domain diagnostics.)
+Theorem 4.3 (Family-wise validity, safety-first). Choosing αi = α/5 yields P(∃i : ρi(y) > 1 |
+y fully valid ) ≤ α by the union bound. Where a fixed-sequence procedure is used to recover power
+under dependence, gates are tested safety-first (f4 at full level α before all others), aligning power
+allocation with the veto semantics of § 5.2.
+4.3 Regime II — estimable covariate shift: weighted conformal
+When the shift is estimable (e.g. a changed prompt mix), weighted conformal prediction [18] restores
+the per-instance guarantee with likelihood-ratio weights ˆw(x); weight-estimation error enters as an
+explicit total-variation correction. (Online density-ratio estimation as in [4] is a compatible single-
+gate instance.)
+4.4 Regime III — arbitrary/adversarial drift: adaptive conformal inference
+Deployment default: the online update of Gibbs and Cand` es [9], αt+1 = αt + γ(α − errt), with the
+conformal quantile taken at level 1 − αt.
+6
+=== PAGE 7 ===
+Theorem 4.4 ([9], restated) . For arbitrary—including adversarially chosen—sequences of distri-
+butions,
+ 1
+T
+P
+t≤T errt − α
+ ≤ max(α1,1−α1)+γ
+γT → 0.
+Long-run false-rejection frequency converges to nominal α with no exchangeability or station-
+arity assumption; the guarantee does not lapse between recalibrations because adaptation is per-
+step—there is no “blind window” at the level of long-run frequency. (A3) is thereby demoted
+from a load-bearing assumption to the condition under which the stronger per-instance bound of
+Theorem 4.2 additionally holds.
+Monitoring and fail-safe posture. Drift monitoring uses conformal test martingales / e-
+processes [19]: anytime-valid, no scheduled testing lag, false-alarm control at every stopping time;
+the monitored features include the aggregate-MMD statistic of § 3.5. Upon alarm and until re-
+validation, thresholds are tightened monotonically and low-margin outputs are routed to abstention
+or human review.
+Proposition 4.5 (Safe-side degradation). Decreasing τi enlarges every rejection region and shrinks
+none; during the alarm state the probability of a false accept on any dimension is non-increasing
+relative to the pre-alarm configuration.
+Proof. {fi > τi} is decreasing in τi under set inclusion.
+What is sacrificed under drift is throughput (more abstentions), never the safety direction of
+the error.
+4.5 Power accounting
+Proposition 4.6 (Detection power lower bound) . If an inserted violation survives claim decom-
+position with probability at least 1 − εD, is flagged as an edge by NLI with probability at least
+1 − εNLI given survival, and, once in the graph, drives ρ3 > 1 with probability at least π3, then
+P(detected) ≥ (1 − εD)(1 − εNLI) π3.
+εD and εNLI are estimated on the audit benchmarks of § 7 with Clopper–Pearson intervals and
+enter the reported power certificate. Abstention rule: if extraction coverage (fraction of tokens
+attributable to extracted claims) falls below a floor cmin, the output is routed to abstention.
+4.6 Reporting requirements
+For every deployment: ni; empirical coverage on held-out valid data with Clopper–Pearson intervals;
+ECE for every internal classifier ( f2’s NLI, f4’s safety classifier); the e-process monitor state; and
+the regime (I/II/III) under which each guarantee is claimed.
+5 Decision Architecture: Partition, Veto, Stability
+5.1 Parallel evaluation and the partition theorem
+All five scores are computed for every output, unconditionally; no gate’s computation may be short-
+circuited by another’s failure. The primary logged object is the failure vector K(y) = {i : ρi(y) >
+1}.
+7
+=== PAGE 8 ===
+Lemma 5.1 (Measurability). Each fi of § 3 is measurable: f1 is computable; f2, f4 are compositions
+of measurable maps with continuous links; f3 is continuous in the assignment for each fixed graph,
+with graph extraction a measurable map into a countable set of structures; f5 is a max/min of
+continuous functionals. Hence all maps below are measurable.
+Theorem 5.2 (Completeness and mutual exclusivity) . For any finite family of measurable gates,
+with Π(y) = min K(y) (and 0 if K(y) = ∅),
+Σ∗ = Vvalid ⊔
+5G
+i=1
+Ei, E i = {y : ρi(y) > 1, ρj(y) ≤ 1 ∀j < i}.
+Proof. Well-ordering of the failure set K(y).
+Remark 5.3 (Honesty) . Theorem 5.2 holds for any five measurable criteria and certifies nothing
+about gate quality; it is bookkeeping. The substantive guarantees are Theorems 4.2–4.4 and the
+propositions of this section.
+5.2 Safety veto and the demotion of Π
+Dec(y) =
+
+
+
+Block 4 ∈ K(y) (safety veto, order-independent)
+Repair via Π−4(y) K(y) ̸= ∅, 4 /∈ K(y)
+Pass K(y) = ∅
+where Π −4(y) = min K(y) over the non-veto gates. Π survives only as a repair-routing heuristic
+(“fix the format before re-checking facts”), a role in which lexicographic order is defensible; it
+carries no reporting or risk semantics.
+Proposition 5.4 (No masking). Under Dec, every output with ρ4(y) > 1 is Blocked regardless of
+ρ1, ρ2, ρ3, ρ5. The scenario “ f1 fails first and suppresses an f4 violation ” is unrealizable: “first”
+does not exist at the decision layer, and by § 3.4 it does not exist at the dataflow layer either.
+Remark 5.5 (Π is not a security boundary) . Consider an adversary who deliberately plants a mild
+fact violation so that f2 “fails first.” Against a sequential, short-circuiting evaluator this attack
+masks a co-occurring alignment violation—it is valid against the v1 semantics. Under the present
+architecture it accomplishes nothing: all five scores are computed unconditionally, K(y) records
+both failures, f4 reads the raw text, and Dec blocks on 4 ∈ K(y) irrespective of every other entry.
+Mutual exclusivity is a property of the reporting taxonomy Π (one primary label per output);
+diagnostic completeness is carried by K(y), which is always full. The security boundary is Dec,
+never Π.
+5.3 Well-posedness and stability
+Proposition 5.6 (Almost-sure well-posedness) . If each fi(y) has an atomless law at τi under
+the deployment distribution, then almost surely every output has strictly positive margin γ(y) =
+mini |fi(y) − τi|, and Π, K, Dec are locally constant under score perturbations smaller than γ(y).
+The condition is empirically checkable via continuous score histograms; this replaces the v1
+conjecture that invoked a (non-existent) canonical reference measure on Wasserstein space and a
+Hausdorff-dimension bound that is meaningless in infinite dimensions.
+8
+=== PAGE 9 ===
+High dimensions and measure concentration. The classification factors through the five
+scalar scores: Dec depends on y only via ( f1(y), . . . , f5(y)) ∈ R5. High-dimensional geometry of
+the embedding space therefore enters only through the one-dimensional law of each score; no claim
+about the Hausdorff dimension or measure of a boundary in P(Rd) is made or needed—the v1
+boundary conjecture is not repaired but dissolved. The legitimate residue of the concentration
+concern is empirical: score laws might concentrate near τi, producing many small-margin outputs.
+Two answers. First, the validity guarantees (Theorems 4.2 and 4.4) hold regardless of concentra-
+tion; margins matter only for estimation stability (Prop. 5.7). Second, we mandate reporting the
+empirical margin distribution ˆP(|fi − τi| ≤δ) and support an optional abstention band : outputs
+with margin below δ are routed to review, converting boundary ambiguity from a silent failure
+mode into a measured abstention rate.
+Proposition 5.7 (Margin-based stability of estimated classification). If simultaneously | ˆfi−fi| ≤εi
+for all i with probability at least 1 − δ (MMD concentration for the mean form; ε1 = 0; Prop. 3.1
+converting NLI-confidence error into ε3) and γ(y) > maxi εi, then dDec(y) = Dec(y) with probability
+at least 1 − δ.
+Remark 5.8 (Stability–sensitivity separation) . Two perturbation classes must not be conflated.
+Measurement perturbations (sampling noise, NLI-confidence noise) should not flip decisions; Prop. 5.7
+delivers this above the margin. Semantic perturbations (inserting a single negation) should flip de-
+cisions, and the gates are engineered to be non-smooth in exactly this direction: a single-unit flip
+at feature distance ∆ moves f soft
+5 by at least ∆ (Prop. 3.5) and moves the min/max aggregations
+of f2 and f hard
+5 by O(1), while measurement noise moves scores by at most ε; the two regimes
+are distinguishable whenever ∆ > 2ε. Local constancy is claimed in the score metric, never in
+the semantic metric; demanding the latter would reintroduce the dilution pathology that Prop. 3.4
+rules out.
+Proposition 5.9 (One-sided metric comparison) . For L-Lipschitz bounded k and measures sup-
+ported in the R-ball, MMDk ≤ C(L, K) W1 ≤ C(L, K) W2. The converse inequality fails in general;
+only this direction is used, and only for interpretability (small transport perturbations of an output
+cannot inflate the soft intent score), never for a guarantee.
+This replaces the v1 conjecture of global Lipschitz equivalence of W2, harmonic, and RKHS
+norms, which is false as stated.
+5.4 Computational profile and anytime operation
+Latency is graded per gate, and the architecture guarantees that safety never waits for expensive
+computation. Fast path (synchronous, per output): f4 is one classifier forward pass on the raw
+text, and f1 is linear-time validation (membership checking), with the cubic error-correcting parse
+invoked only on failure to quantify severity; the veto of § 5.2 therefore executes within a single
+forward-pass latency. Slow path (deadline-bounded): f2 is dominated by retrieval and NLI passes;
+the relaxed energy of f3 is a sparse convex program on a claim graph with m vertices (m in the
+tens for typical outputs), i.e. millisecond-scale linear algebra, and is updatable incrementally under
+streaming generation by low-rank updates of LF (w) as claims and edges arrive. The SAT certifier is
+invoked lazily under a deadline: the relaxed score is an anytime answer, and if the deadline expires
+the output carries an “uncertified” flag with conservative handling. This is a principled rather
+than an apologetic design: Prop. 3.3 shows the worst-case certification cost is unavoidable for any
+exact method, so the only honest options are anytime relaxation plus optional certification—which
+is what the gate does. Scope honesty: microsecond decision loops (e.g. high-frequency trading)
+9
+=== PAGE 10 ===
+are outside the scope of any semantic verification—no entailment model evaluates in microseconds;
+the target regime is the one in which generation itself costs 0 .1–10 s and full verification runs at a
+fraction of that budget, with the safety fast path always inside it.
+6 Mechanism Study: Sheaf Energy versus Contradiction Count-
+ing
+The framework’s mathematical identity rests on one empirical question: does the sheaf energy
+f3 add signal beyond the trivial baseline that counts NLI-flagged contradiction edges above a
+decision threshold? Before committing to full-scale experiments ( § 7), we isolate and demonstrate
+the mechanism by which a separation should arise, under two documented assumptions about NLI
+behavior:
+(S1) Distance decay. The confidence assigned by a pairwise NLI model to the direct contradiction
+edge decays with the semantic/reasoning distance k between the violating statement and the
+claim it contradicts; in the simulation, c(k) = clip(0 .95 − 0.13k + N (0, 0.06)), falling below
+the standard 0 .5 decision threshold around k ≥ 3.
+(S2) Noise in both classes. Hedged or hypothetical claims (considered and rejected by the text,
+hence not asserted) are flagged by NLI as contradicting asserted claims with confidence w ∼
+U (0.55, 0.85); and spurious sub-threshold asserted–asserted contradiction edges occur with
+w ∼ U (0.10, 0.45).
+Setup. Synthetic reasoning chains of six asserted claims connected by entailment edges ( w ∼
+Beta(20, 2)); violated cases append an asserted statement contradicting claim A0 at step distance
+k ∈ {1, . . . ,5}, with the direct edge confidence drawn per (S1) and an optional weak paraphrase
+edge to A1; both classes receive (S2) noise. 120 cases per ( k, class) cell. Three detectors: Count
+(# contradiction edges with w ≥ 0.5; the standard baseline), Sheaf (the unified energy of § 3.3,
+assertion-aware, no thresholding), Sat (DPLL on edges with w ≥ 0.5). Localization credit: for
+Count, the injected edge itself is above threshold; for Sheaf, the top-1 weighted-residual hotspot
+is the injected edge.
+k AUROC Count AUROC Sheaf AUROC Sat Loc. Count Loc. Sheaf
+1 0.881 1.000 1.000 100.0% 100.0%
+2 0.875 1.000 1.000 100.0% 100.0%
+3 0.831 1.000 0.933 86.7% 100.0%
+4 0.537 0.993 0.554 10.8% 97.5%
+5 0.504 0.970 0.500 0.0% 83.3%
+Table 1: Mechanism study: detection AUROC and top-1 localization rate versus violation distance
+k (n = 120 per cell). Threshold-based methods collapse to chance as the direct-edge confidence
+crosses the threshold; the weighted sheaf energy degrades gracefully and retains localization.
+Findings. Two mechanisms produce the separation in Table 1. Threshold collapse versus graceful
+degradation: once (S1) pushes the direct-edge confidence below 0 .5 (k ≥ 4), Count and Sat lose
+the edge entirely and fall to chance, while Sheaf continues to accumulate the sub-threshold soft
+evidence as weighted energy (AUROC 0 .970 at k = 5) and still localizes the injected edge in 83%
+10
+=== PAGE 11 ===
+of cases where Count localizes 0%. Hypothetical reconciliation: even at k = 1–2, Sheaf leads
+by about 12 AUROC points because its global minimization sets non-asserted (hedged) claims to
+values consistent with the asserted graph, discounting the (S2) false-positive edges that Count
+tallies indiscriminately.
+Scope of the claim. This is a simulation, not evidence about deployed systems. It establishes the
+conditional statement: if real NLI confidences decay with distance (S1) and produce hedged-claim
+false positives (S2)—both consistent with known NLI behavior, and both directly testable— then
+the sheaf energy separates structurally from counting. The pre-registered protocol of § 7 tests
+exactly (S1)/(S2) and the induced separation with real models; the harness used here becomes
+the real experiment by replacing simulated confidences with model outputs. Success criteria are
+pre-registered in § 7. A reference implementation of f3 (weighted sheaf energy, convex minimization
+over the constraint polytope, DPLL certifier with deletion-minimal unsatisfiable cores, hotspot
+localization) and the study harness accompany the paper.
+7 Pre-Registered Empirical Protocol
+(1) Datasets and gate mapping. Format: structured-output benchmarks plus synthetic gram-
+mar corruption at controlled edit distances (ground-truth f1). Fact: TruthfulQA and FEVER-style
+verification with a frozen retrieval index. Logic: GSM8K/MATH step-consistency with adversar-
+ial contradiction insertion at known graph locations and controlled distance k—the field version of
+§ 6. Alignment: human-adjudicated safety benchmarks. Intent: IFEval-style verifiable-constraint
+suites.
+(2) Primary metrics. Per-gate AUROC and FPR at 95% TPR; empirical conformal coverage
+versus nominal α with Clopper–Pearson intervals (a direct field test of Theorem 4.2); ACI long-
+run error tracking under injected drift (Theorem 4.4); ECE of internal classifiers; end-to-end Dec
+accuracy against human triage.
+(3) Ablations with pre-registered predictions. (a) MMD vs. Sinkhorn vs. plug-in W2:
+plug-in W2 degrades with embedding dimension per its n−1/d rate; the others do not. (b) Sheaf
+vs. counting vs. SAT-only on real chains —the empirical linchpin; pre-registered success criteria:
+AUROC gap ≥ 3 points overall or localization advantage ≥ 10 points, with the gap widening in k
+as in Table 1. (c) Lexicographic Π vs. full K(y) for repair routing. (d) Mean-MMD vs. max-form
+f5 on a single-negation adversarial suite: the mean form’s miss rate tends to 1 as m grows, by
+Prop. 3.4.
+(4) Assumption tests. Direct measurement of (S1): NLI confidence on true contradiction
+pairs as a function of reasoning distance; of (S2): NLI false-positive rate on hedged/hypothetical
+constructions.
+(5) Dependence diagnostics. Empirical correlation matrix of (f1, . . . , f5); strong dependence
+motivates the safety-first fixed-sequence procedure of Theorem 4.3.
+(6) Instrument audit. Human-annotated decomposition benchmark for εD (claim-level re-
+call, Clopper–Pearson interval); edge-detection benchmark with adversarial paraphrase/negation
+for εNLI; abstention floor cmin reported with the resulting abstention rate; all feeding the power
+certificate of Prop. 4.6.
+(7) Drift monitoring. E-process monitor state and recalibration events logged; coverage
+audited within drift episodes, where the Regime-III guarantee is exactly the testable object.
+11
+=== PAGE 12 ===
+8 Limitations and Open Problems
+7.1 Instrument dependence. All distributional gates are relative to the fixed E, D; guaran-
+tees are for the scores as defined (Type-I end-to-end by Prop. 4.1; Type-II bounded by Prop. 4.6
+and audited). Encoder-class invariance is open. 7.2 Assumption ledger. Regime I requires
+exchangeability; Regime II requires estimable shift; Regime III guarantees long-run frequency only.
+Per-instance guarantees under fully adversarial shift are impossible in general; the fail-safe posture
+(Prop. 4.5) is the stated conduct in that gap. Marginal (not conditional) coverage is delivered;
+conditional coverage by prompt-difficulty strata via Mondrian conformal is the designated next
+theoretical step. 7.3 Relaxation gap. A continuous zero of f3 certifies only relaxed consis-
+tency (Prop. 3.2); the certifier closes the gap at worst-case exponential cost, and Prop. 3.3 shows
+this is unavoidable unless P = NP. 7.4 Mechanism-study scope. § 6 validates a conditional
+mechanism under (S1)/(S2), not a field claim; the protocol of § 7 carries the burden of proof. 7.5
+Lexicographic repair order. A convention; no optimality claim is made.
+Open Problem (T arski unification). Recast the hard and soft logic layers as sheaves valued
+in complete lattices with the Tarski Laplacian [8], where global sections are fixed points and
+Boolean semantics is native.
+9 Conclusion
+Five well-posed, individually guaranteed instruments beat one undefined manifold. The framework
+presented here gives the guardrail architecture already running in production its missing math-
+ematical contract: computable severities, finite-sample false-rejection control graded across three
+drift regimes, a complete and mutually exclusive error taxonomy, an unmaskable safety veto, and—
+in the sheaf logic gate—a candidate for genuinely new detection capability whose decisive test is
+pre-registered.
+A Correction Table: v1 → v3
+References
+[1] A. Aho and T. Peterson. A minimum-distance error-correcting parser for context-free languages. SIAM
+J. Comput. , 1972.
+[2] A. Andoni, A. Naor, and O. Neiman. Snowflake universality of Wasserstein spaces. Ann. Sci. ´Ec. Norm.
+Sup´ er., 2018.
+[3] J. Cherian, I. Gibbs, and E. Cand` es. Large language model validity via enhanced conformal prediction
+methods. NeurIPS, 2024.
+[4] CoFact: Conformal factuality guarantees for language models under covariate shift. ICLR, 2026.
+[5] S. Coles. An Introduction to Statistical Modeling of Extreme Values . Springer, 2001.
+[6] N. Fournier and A. Guillin. On the rate of convergence in Wasserstein distance of the empirical measure.
+Probab. Theory Relat. Fields , 2015.
+[7] A. Genevay, L. Chizat, F. Bach, M. Cuturi, and G. Peyr´ e. Sample complexity of Sinkhorn divergences.
+AISTATS, 2019.
+12
+=== PAGE 13 ===
+v1 construct Defect v3 replacement
+Riemannian “semantic space”
+with Fisher metric
+Fisher metric requires a paramet-
+ric family; the space was never con-
+structed
+Encoder embeddings; empirical
+measures (§ 2)
+Fiber bundle with Karcher triv-
+ialization
+Fiber/sheaf unspecified; uniqueness
+conditions absent
+Removed; the surviving sheaf is the
+finite cellular sheaf of § 3.3
+W2 projections onto convex sets
+(f1, f4)
+Not well-posed in positively curved
+Wasserstein space
+Exact edit distance ( § 3.1); cali-
+brated classifier on raw text ( § 3.4)
+ˇCech obstruction with Hodge
+norm (f3)
+Sheaf unspecified; infinite-
+dimensional Hodge theory un-
+defined
+Weighted cellular sheaf Laplacian
+with relax-and-certify ( § 3.3)
+Isometric RKHS embedding of
+W2 (f5)
+Impossible for d ≥ 3 [2] Kernel mean embedding, isometric
+w.r.t. MMD; max-form aggregation
+(§ 3.5)
+Boundary-regularity conjecture
+via a reference measure on
+P(M )
+No canonical reference measure ex-
+ists; Hausdorff bound meaningless
+in infinite dimensions
+Atomless-score almost-sure well-
+posedness (Prop. 5.6)
+Global Lipschitz equivalence of
+three norms
+False; only one-sided bounds hold Prop. 5.9, one-sided,
+interpretability-only
+EVT thresholds with Fr´ echet
+law
+Bounded scores lie in the Weibull
+domain; conditions unverified
+Conformal theorems 4.2–4.4 across
+three regimes; EVT optional with
+diagnostics
+Lexicographic Π as sole classi-
+fier
+Masks safety violations behind
+lower-index failures
+Parallel evaluation, safety veto, Π
+demoted to repair routing ( § 5.2)
+[8] R. Ghrist and H. Riess. Cellular sheaves of lattices and the Tarski Laplacian. Homology Homotopy
+Appl., 2022.
+[9] I. Gibbs and E. Cand` es. Adaptive conformal inference under distribution shift. NeurIPS, 2021.
+[10] M. Goemans and D. Williamson. Improved approximation algorithms for maximum cut and satisfiability
+problems using semidefinite programming. J. ACM, 1995.
+[11] A. Gretton, K. Borgwardt, M. Rasch, B. Sch¨ olkopf, and A. Smola. A kernel two-sample test. J. Mach.
+Learn. Res., 2012.
+[12] J. Hansen and R. Ghrist. Toward a spectral theory of cellular sheaves. J. Appl. Comput. Topol. , 2019.
+[13] P. Liang et al. Holistic evaluation of language models. TMLR, 2023.
+[14] S. Huntsman, M. Robinson, and L. Huntsman. Prospects for inconsistency detection using large lan-
+guage models and sheaves. arXiv:2401.16713, 2024.
+[15] J. Zhou et al. Instruction-following evaluation for large language models. arXiv:2311.07911, 2023.
+[16] C. Mohri and T. Hashimoto. Language models with conformal factuality guarantees. ICML, 2024.
+[17] T. Rebedea et al. NeMo Guardrails: A toolkit for controllable and safe LLM applications. EMNLP
+Demo, 2023.
+[18] R. Tibshirani, R. Foygel Barber, E. Cand` es, and A. Ramdas. Conformal prediction under covariate
+shift. NeurIPS, 2019.
+[19] V. Vovk. Testing randomness online. Statist. Sci. , 2021.
+[20] Y. Abbasi Yadkori et al. Mitigating LLM hallucinations via conformal abstention. arXiv:2405.01563,
+2024.
+13

@@ -1,39 +1,49 @@
-"""Kaggle experiment loop driver.
+"""Kaggle experiment loop driver (generic over experiment directories).
 
 Auth: reads the API token from ~/.kaggle/access_token (kaggle CLI >= 1.8).
 
 Usage:
-    python run_loop.py push      # rebuild ipynb (jupytext + kernelspec), push kernel
-    python run_loop.py status    # check run status
-    python run_loop.py pull      # download outputs into experiments/results/
+    python run_loop.py push   [kernel_dir]   # jupytext build + kernelspec + push (T4)
+    python run_loop.py status [kernel_dir]
+    python run_loop.py pull   [kernel_dir] [dest]
+
+kernel_dir defaults to ./kaggle (the v1-scope experiment); pass e.g. m1/kaggle
+for the M1 field study. The directory must hold kernel-metadata.json and one
+percent-format .py source next to its generated .ipynb.
 """
-import json, os, subprocess, sys
+import glob, json, os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-KDIR = os.path.join(HERE, "kaggle")
-META = os.path.join(KDIR, "kernel-metadata.json")
-RESULTS = os.path.join(HERE, "results")
 
 
-def kernel_id():
-    with open(META) as f:
+def kdir():
+    d = sys.argv[2] if len(sys.argv) > 2 else "kaggle"
+    path = d if os.path.isabs(d) else os.path.join(HERE, d)
+    assert os.path.isfile(os.path.join(path, "kernel-metadata.json")), path
+    return path
+
+
+def kernel_id(path):
+    with open(os.path.join(path, "kernel-metadata.json")) as f:
         return json.load(f)["id"]
 
 
 def cmd(args):
     print("+", " ".join(args))
-    r = subprocess.run(args, capture_output=True, text=True)
+    r = subprocess.run(args, capture_output=True, text=True,
+                       env=dict(os.environ, PYTHONUTF8="1"))
     print(r.stdout)
     if r.returncode != 0:
         print(r.stderr, file=sys.stderr)
     return r
 
 
-def build():
+def build(path):
     """py -> ipynb via jupytext, then add the kernelspec Kaggle's papermill requires."""
-    src = os.path.join(KDIR, "svg_gates_v1.py")
-    nb_path = os.path.join(KDIR, "svg_gates_v1.ipynb")
-    cmd([sys.executable, "-m", "jupytext", "--to", "ipynb", src])
+    src = glob.glob(os.path.join(path, "*.py"))
+    assert len(src) == 1, src
+    nb_path = src[0][:-3] + ".ipynb"
+    cmd([sys.executable, "-m", "jupytext", "--to", "ipynb", src[0]])
     with open(nb_path, encoding="utf-8") as f:
         nb = json.load(f)
     nb["metadata"]["kernelspec"] = {"name": "python3", "display_name": "Python 3",
@@ -44,20 +54,24 @@ def build():
 
 
 def push():
-    build()
-    os.environ["PYTHONUTF8"] = "1"
+    path = kdir()
+    build(path)
     # T4 required: Kaggle's default P100 (sm_60) is unsupported by current torch builds
-    cmd([sys.executable, "-m", "kaggle", "kernels", "push", "-p", KDIR,
+    cmd([sys.executable, "-m", "kaggle", "kernels", "push", "-p", path,
          "--accelerator", "NvidiaTeslaT4"])
 
 
 def status():
-    cmd([sys.executable, "-m", "kaggle", "kernels", "status", kernel_id()])
+    cmd([sys.executable, "-m", "kaggle", "kernels", "status", kernel_id(kdir())])
 
 
 def pull():
-    os.makedirs(RESULTS, exist_ok=True)
-    cmd([sys.executable, "-m", "kaggle", "kernels", "output", kernel_id(), "-p", RESULTS])
+    path = kdir()
+    dest = sys.argv[3] if len(sys.argv) > 3 else os.path.join(HERE, "results",
+                                                              "latest")
+    os.makedirs(dest, exist_ok=True)
+    cmd([sys.executable, "-m", "kaggle", "kernels", "output", kernel_id(path),
+         "-p", dest])
 
 
 if __name__ == "__main__":

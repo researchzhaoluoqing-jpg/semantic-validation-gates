@@ -61,8 +61,8 @@ torch.manual_seed(SEED)
 QUICK = os.environ.get("QUICK", "0") == "1"  # default flips per push: smoke vs full
 NLI_MODEL = "microsoft/deberta-large-mnli"
 N_CAL_MNLI = 400 if QUICK else 2000
-N_CHAINS = 140 if QUICK else 450
-N_PER_CELL = 20 if QUICK else 150
+N_CHAINS = 140 if QUICK else 1000
+N_PER_CELL = 20 if QUICK else 300
 N_BOOT = 500 if QUICK else 4000
 CELLS = [("V1", 1), ("V2", 2), ("V2", 3), ("V2", 4), ("V2", 5), ("V3", 0), ("V4", 1)]
 CONTRA_KEEP = 0.05        # soft-evidence floor for contradiction edges
@@ -171,7 +171,10 @@ print(f"{len(chains)} chains; step-count dist:",
 
 NEG_TEMPLATES = ["However, it is not the case that {c}",
                  "Actually, the following is false: {c}",
-                 "This shows that it is wrong to say {c}"]
+                 "This shows that it is wrong to say {c}",
+                 "On reflection, the claim that {c} cannot be right",
+                 "Contrary to the above, it is untrue that {c}",
+                 "We must conclude that the statement '{c}' does not hold"]
 HEDGE_TEMPLATE = ("Suppose, hypothetically, that it were not true that {c} — "
                   "but as computed above, that cannot be the case.")
 
@@ -224,8 +227,11 @@ def make_field_v12(k, hedge=False):
     return CasePair(View(g_clean), View(g_vio),
                     "V4" if hedge else ("V1" if k == 1 else "V2"), k, ("g", inj))
 
-CLOSING = ("Overall, the final result of {f:g} is about {c:g} times the "
-           "initial value of {i:g} in this problem.")
+CLOSING_TEMPLATES = [
+    "Overall, the final result of {f:g} is about {c:g} times the initial value of {i:g} in this problem.",
+    "In summary, going from the starting quantity of {i:g} to the final {f:g} amounts to a factor of roughly {c:g}.",
+    "Putting it together, the answer {f:g} represents approximately {c:g} times the original {i:g}.",
+]
 
 def make_field_v3():
     pool = [c for c in chains
@@ -235,10 +241,12 @@ def make_field_v3():
     v0, vlast = vals[0], vals[-1]
     true_c = vlast / v0
 
+    tmpl = CLOSING_TEMPLATES[int(rng.integers(len(CLOSING_TEMPLATES)))]
+
     def build(consistent):
         c = (true_c * (1 + rng.normal(0, 0.02)) if consistent
              else true_c * float(rng.choice([1, -1]) * rng.uniform(0.45, 0.9) + 1.0))
-        closing = CLOSING.format(f=vlast, c=round(c, 2), i=v0)
+        closing = tmpl.format(f=vlast, c=round(c, 2), i=v0)
         texts = list(ch["steps"]) + [closing]
         g = build_graph(texts, [True] * len(texts))
         nodes = list(range(len(vals)))

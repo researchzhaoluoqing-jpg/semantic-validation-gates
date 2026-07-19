@@ -48,11 +48,16 @@ a three-line finite-sample theorem with no distributional assumptions.
 bounded, placing them in the Weibull, not Fr\'echet, max-domain of attraction
 \cite{coles2001}---any EVT use must carry domain diagnostics.) The
 field-study coverage audit (\S\ref{sec:field-e2}) verifies the exceedance
-bound on real chains ($0.095\le\alpha=0.10$) and shows that the
-coverage-\emph{distribution} refinement $\mathrm{Beta}(m,n+1-m)$ additionally
-requires (near-)continuous scores: with $39.7\%$ tied scores it is rejected
-while the bound itself holds; randomized tie-breaking or the tie-safe
-statement should be used with discrete score atoms.
+bound on real chains ($0.095\le\alpha=0.10$; three independent runs). The
+coverage-\emph{distribution} refinement $\mathrm{Beta}(m,n+1-m)$ describes
+the \emph{exact conditional} coverage, which no finite audit observes
+directly: empirical per-split coverages convolve it with test-set binomial
+noise, split dependence under calibration-pool reuse, and tie discretization,
+so a naive KS test against the Beta law is miscalibrated---it rejects even
+ideal continuous i.i.d.\ scores, while the analytically exact conditional
+coverage passes (KS $p=0.64$; null checks released with the code). Audits of
+the refinement must test against the binomially convolved law; the tie-safe
+exceedance bound is the deployable field statement.
 
 \begin{theorem}[Family-wise validity, safety-first]
 \label{thm:familywise}

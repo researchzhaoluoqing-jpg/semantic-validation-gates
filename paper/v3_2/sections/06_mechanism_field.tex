@@ -170,11 +170,15 @@ P3 remedy applies one level down.
 On clean-chain sheaf scores (pool $n=735$; $n_{\mathrm{cal}}=200$,
 $\alpha=0.10$, $R=1{,}000$ random splits), pooled exceedance is
 $0.0952\le\alpha$ (exact binomial $p=1.0$ against inflation): the
-finite-sample bound of Theorem~\ref{thm:split} holds in the field. The
-coverage-distribution refinement $\mathrm{Beta}(m,n+1-m)$ is rejected by a KS
-test ($p\approx 0$) because $39.7\%$ of scores are tied---its continuity
-assumption fails for discrete score atoms; the tie-safe bound is the correct
-field statement.
+finite-sample bound of Theorem~\ref{thm:split} holds in the field (and again
+in the replication and scale-up runs: $0.0995$ and $0.0996$). A naive KS test
+of per-split coverages against the $\mathrm{Beta}(m,n+1-m)$ refinement
+rejects ($p\approx 0$), but null checks show this reflects the audit
+statistic, not the law: the same KS rejects ideal continuous i.i.d.\ scores
+under the same procedure (test-set binomial noise, pool reuse, and, here,
+$39.7\%$ tied scores), while the analytically exact conditional coverage
+passes (KS $p=0.64$). See \S\ref{sec:calibration} for the corrected audit
+prescription; the tie-safe exceedance bound is the field-verified object.
 
 \paragraph{Scale-up.} A doubled-scale run ($1{,}000$ chains, $n=210$
 evaluation cases per cell, six negation and three closing-sentence template

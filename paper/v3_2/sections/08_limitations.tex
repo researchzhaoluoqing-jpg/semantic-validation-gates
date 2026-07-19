@@ -22,18 +22,24 @@ designated next theoretical step. The field E2 audit adds: with discrete score
 atoms (39.7\% ties observed), the coverage-distribution refinement requires
 randomized tie-breaking; the exceedance bound itself is tie-safe and held.
 
-\textbf{8.3 Relaxation gap.} A continuous zero of $f_3$ certifies only relaxed
-consistency (Prop.~\ref{prop:gap}); the certifier closes the gap at worst-case
-exponential cost, and Prop.~\ref{prop:no-poly} shows this is unavoidable
-unless $\mathrm P=\mathrm{NP}$.
+\textbf{8.3 Relaxation gap and certificate-layer fragility.} A continuous
+zero of $f_3$ certifies only relaxed consistency (Prop.~\ref{prop:gap}); the
+certifier closes the gap at worst-case exponential cost, and
+Prop.~\ref{prop:no-poly} shows this is unavoidable unless
+$\mathrm P=\mathrm{NP}$. The field study adds a caution on the certificate
+layer's \emph{input}: hard clauses assembled by thresholding NLI edges at
+$w\ge 0.5$ inherit the instrument's false-positive edges, driving the
+thresholded SAT arm to chance on real chains (\S\ref{sec:field}); certificates
+therefore certify the thresholded graph, not the text, and a calibrated
+edge-inclusion threshold (or weighted-clause certificates) is the registered
+repair before the certificate layer's field role can carry weight.
 
 \textbf{8.4 Scope of the field evidence.} \S\ref{sec:field} uses
-template-inserted violations on one corpus under one instrument (per the
-registered protocol); the localization claim is scoped to compositional
-violations, and the V1/V2 regime is provably counting-equivalent
-(Prop.~\ref{prop:struct-equiv}). Replication with a second instrument, an
-organic-error corpus, and MATH are registered next steps
-(\S\ref{sec:protocol}(8)).
+template-inserted violations on a single corpus (GSM8K), now under two
+architecture-distinct instruments; the localization claim is scoped to
+compositional violations, and the V1/V2 regime is provably
+counting-equivalent (Prop.~\ref{prop:struct-equiv}). An organic-error corpus
+and MATH remain registered next steps (\S\ref{sec:protocol}(8)).
 
 \textbf{8.5 Lexicographic repair order.} A convention; no optimality claim is
 made.

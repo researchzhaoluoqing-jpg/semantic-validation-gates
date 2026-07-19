@@ -4,6 +4,10 @@ __pycache__/
 *.pyc
 .kaggle/
 kaggle.json
+access_token
+*.token
+.env
+.env.*
 .claude/
 *.aux
 *.log

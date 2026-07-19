@@ -1,6 +1,6 @@
 {
-  "id": "KAGGLE_USERNAME/semantic-validation-gates-v1",
-  "title": "Semantic Validation Gates - Empirical Validation v1",
+  "id": "luoqingzhao/semantic-validation-gates-v1",
+  "title": "Semantic Validation Gates v1",
   "code_file": "svg_gates_v1.ipynb",
   "language": "python",
   "kernel_type": "notebook",

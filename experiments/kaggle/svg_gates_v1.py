@@ -37,7 +37,7 @@ warnings.filterwarnings("ignore")
 SEED = 42
 random.seed(SEED); np.random.seed(SEED); torch.manual_seed(SEED)
 
-QUICK = os.environ.get("QUICK", "0") == "1"
+QUICK = os.environ.get("QUICK", "1") == "1"  # default flips per push: smoke vs full run
 N_PER_DATASET = 20 if QUICK else 150
 GEN_MODEL = "Qwen/Qwen2.5-0.5B-Instruct" if QUICK else "Qwen/Qwen2.5-1.5B-Instruct"
 EMB_MODEL = "sentence-transformers/all-MiniLM-L6-v2"

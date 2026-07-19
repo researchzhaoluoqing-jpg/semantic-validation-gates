@@ -156,6 +156,28 @@ Concrete revisions to the v3.1 manuscript:
    detection power (10.6% detection, f3 AUROC 0.39, 44% small-perturbation
    classification flips).
 
+## 6b. Replication B — second instrument (added same day)
+
+Key cells replicated with an architecture-distinct instrument
+(`FacebookAI/roberta-large-mnli`; T = 1.337, ECE 0.012, MNLI acc 0.900; 600
+chains, n = 150/cell, 25,786 pairs):
+
+| Cell | SHEAF_MAX | SHEAF-quad | COUNT | WSUM | SAT | Δ vs best bl | Holm p | Loc S/B | FPR@95TPR (MAX) |
+|---|---|---|---|---|---|---|---|---|---|
+| V1 k=1 | 0.752 | 0.752 | 0.679 | 0.752 | 0.505 | 0.000 | 1.000 | 0.17/0.63 | 0.605 |
+| **V3** | **0.999** | 0.593 | 0.499 | 0.500 | 0.510 | **+0.489 [0.479, 0.498]** | **0.0008** | **0.33/0.00** | **0.005** |
+| V4 k=1 | 0.743 | 0.743 | 0.639 | 0.707 | 0.514 | **+0.035 [0.029, 0.042]** | 0.0008 | 0.15/0.68 | 0.657 |
+
+Verdict: **GREEN replicated.** All three structural findings reproduce
+(V3 headline, quadrature dilution, V1 counting-equivalence), and the E2 bound
+holds again (0.0995 ≤ 0.10; ties only 6.7% under this instrument's more
+continuous scores). The instructive difference: this instrument's hedged
+false-positive rate is **nonzero** (S2 = 2.3% [0.9%, 4.8%]) and, exactly as
+the mechanism predicts, **V4's assertion-aware capability activates**
+(+0.035 ≥ the 0.03 bar) where it was vacuous under the zero-S2 instrument.
+P-B is therefore not falsified but *instrument-conditional* — switched on
+precisely when S2 > 0 — which the two instruments jointly demonstrate.
+
 ## 7. Threats to validity
 
 - **Synthetic insertion:** violations are template-inserted into real chains

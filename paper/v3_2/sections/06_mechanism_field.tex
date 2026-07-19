@@ -175,8 +175,25 @@ test ($p\approx 0$) because $39.7\%$ of scores are tied---its continuity
 assumption fails for discrete score atoms; the tie-safe bound is the correct
 field statement.
 
+\paragraph{Replication with a second instrument.} The key cells were
+replicated with an architecture-distinct instrument
+(RoBERTa-large-MNLI, $T=1.337$, ECE $0.012$; 600 chains; $n=150$/cell). The
+headline replicates: on V3, the max-form sheaf energy scores AUROC
+$\mathbf{0.999}$ (FPR at 95\% TPR $0.5\%$; localization $0.33$ vs.\ $0.00$)
+against chance-level baselines ($\Delta=+0.489$ [$0.479,0.498$], Holm
+$p=0.0008$); the quadrature dilution ($0.593$) and the structural coincidence
+on V1 (max-form $\equiv$ \textsc{Wsum} $=0.752$) also replicate; the
+Regime-I bound holds again ($0.0995\le 0.10$). Instructively, this
+instrument's hedge false-positive rate is \emph{nonzero} ($2.3\%$,
+Clopper--Pearson $[0.9\%,4.8\%]$), and exactly as the mechanism predicts, the
+assertion-aware reconciliation capability activates: on V4 the sheaf beats
+\textsc{Wsum} by $+0.035$ ($\ge$ the pre-registered $0.03$ bar) where under
+the zero-S2 instrument it was vacuous. The V4 capability is thus an
+\emph{instrument-conditional} one, switched on precisely when
+$\mathrm{S2}>0$---a falsifiable dependence the two instruments jointly
+demonstrate.
+
 \paragraph{Scope of the claim.} Violations are template-inserted into real
-chains (the pre-registered method); replication with an architecture-distinct
-second instrument and an organically generated error corpus is registered as
-the immediate next step. All code, the frozen protocol with its deviation log,
-and per-run artifacts are released with the paper.
+chains (the pre-registered method); an organically generated error corpus is
+registered as the immediate next step. All code, the frozen protocol with its
+deviation log, and per-run artifacts are released with the paper.

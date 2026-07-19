@@ -1,0 +1,11 @@
+experiments/results/
+paper_extracted.txt
+__pycache__/
+*.pyc
+.kaggle/
+kaggle.json
+.claude/
+*.aux
+*.log
+*.synctex.gz
+feedback from agent.txt

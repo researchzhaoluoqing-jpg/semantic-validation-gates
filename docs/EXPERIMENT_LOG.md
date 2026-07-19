@@ -63,9 +63,13 @@ frozen GREEN/YELLOW/RED decision rules.
 
 | Ver | Date | Config | Status | Outcome |
 |---|---|---|---|---|
-| v1 | 2026-07-19 | smoke (QUICK: 80 chains, 20/cell, MNLI-cal 400) | running | pipeline validation |
+| v1 | 2026-07-19 | smoke | ERROR | harness dataset mount path not found; dynamic discovery added |
+| v2/v4 | 2026-07-19 | smoke | ERROR | DeBERTa-v1 fp16 incompatibility (D1: fp32); V2 k=5 empty chain pool (D3) |
+| v6 | 2026-07-19 | smoke (140 chains, 20/cell) | COMPLETE | pipeline validated; E0 field: S1-direct flat, S2 = 0; quadrature dilution diagnosed → deviation D2 registered |
+| **v7** | 2026-07-19 | **confirmatory**: 450 chains, 150/cell (45 cal + 105 eval), 4000 bootstrap, 22.7k NLI pairs | COMPLETE | **VERDICT: GREEN** — V3: SHEAF_MAX AUROC 0.990 vs chance baselines, Δ=+0.489 [0.470, 0.503], Holm p=0.0018, FPR@95TPR 1% vs 94%, localization 0.24 vs 0.00; V1/V2: SHEAF ≡ WSUM (structural equivalence on assertion-only chains); V4: +0.019 (S2 vacuous); E2: Thm 4.2 bound holds (0.0952 ≤ 0.10), Beta law rejected via ties (39.7%) |
 
-*(to be appended as runs complete)*
+Full analysis: `docs/M1_RESULTS_AND_ANALYSIS.md`. Artifacts:
+`experiments/results/m1_full_v7/`.
 
 ---
 

@@ -1,0 +1,82 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath, amssymb, amsfonts, amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{assumption}{Assumption}
+
+\newcommand{\Rd}{\mathbb{R}^d}
+\newcommand{\PM}{\mathcal{P}(\mathbb{R}^d)}
+\newcommand{\dec}{\mathrm{Dec}}
+\newcommand{\MMD}{\mathrm{MMD}}
+\newcommand{\ECE}{\mathrm{ECE}}
+
+\title{\textbf{Semantic Validation Gates: A Computable, Statistically
+Calibrated Framework for Runtime Verification of Language-Model Outputs}}
+\author{Luoqing Zhao\\ \small Independent Researcher}
+\date{\small Consolidated manuscript (v3.2) --- July 2026\\
+\small (v3.1 revised to incorporate the pre-registered M1 field study)}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+As language models and autonomous agents produce long reasoning chains and
+consequential decisions, deployment requires a verification layer that converts
+qualitative judgments---well-formed, factual, consistent, safe, on-task---into
+calibrated, auditable measurements. We present a five-gate runtime validation
+framework in which every object is computable from real model outputs and every
+guarantee is finite-sample with stated assumptions. The gates are: an exact
+edit-distance format gate; a calibrated-entailment fact gate with mandatory
+abstention; a logic gate built on a weighted cellular sheaf Laplacian over the
+extracted claim graph, unified with propositional constraints through a
+relax-and-certify architecture whose necessity we prove via a
+complexity-theoretic incompleteness result; a safety gate that is
+computationally independent of all parsing; and an intent gate whose
+aggregation form is forced by a dilution theorem. Thresholds are calibrated by
+conformal methods under three deployment regimes---exchangeable,
+covariate-shifted, and arbitrarily (adversarially) drifting---yielding
+end-to-end, instrument-inclusive false-rejection control. The decision layer
+evaluates all gates in parallel and grants alignment violations an
+unconditional veto, provably eliminating the masking of safety failures by
+lower-priority errors. A pre-registered field study with a temperature-calibrated
+NLI on real GSM8K reasoning chains locates the sheaf gate's added capability
+exactly where it is structural: on compositional violations that no sentence
+pair witnesses, the sheaf energy attains AUROC $0.990$ with $1\%$ false-positive
+rate at $95\%$ recall against chance-level counting baselines, and is the only
+method with nonzero localization; on pairwise-visible violations it provably
+coincides with weighted contradiction counting (Prop.~\ref{prop:struct-equiv}).
+We position the framework as the missing theory layer for guardrail pipelines
+already deployed in production without statistical guarantees, and release a
+reference implementation, the pre-registered protocol, and the field-study
+harness.
+\end{abstract}
+
+\input{sections/01_introduction}
+\input{sections/02_representation}
+\input{sections/03_gates}
+\input{sections/04_calibration}
+\input{sections/05_decision}
+\input{sections/06_mechanism_field}
+\input{sections/07_protocol}
+\input{sections/08_limitations}
+\input{sections/09_conclusion}
+
+\appendix
+\input{sections/appendix_a}
+
+\input{sections/bibliography}
+
+\end{document}

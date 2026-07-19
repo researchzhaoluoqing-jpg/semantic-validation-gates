@@ -1,0 +1,52 @@
+\section{Limitations and Open Problems}
+\label{sec:limitations}
+
+\textbf{8.1 Instrument dependence.} All distributional gates are relative to
+the fixed $E,D$; guarantees are for the scores as defined (Type-I end-to-end
+by Prop.~\ref{prop:composite}; Type-II bounded by Prop.~\ref{prop:power} and
+audited). Encoder-class invariance is open. The field study adds a concrete
+instance: V4's hedged-reconciliation capability is contingent on the
+instrument's hedge false-positive rate, which was zero for a calibrated
+DeBERTa-large-MNLI; instruments with weaker pragmatics may re-activate it.
+
+\textbf{8.2 Assumption ledger.} Regime I requires exchangeability; Regime II
+requires estimable shift; Regime III guarantees long-run frequency only.
+Per-instance guarantees under fully adversarial shift are impossible in
+general; the fail-safe posture (Prop.~\ref{prop:safeside}) is the stated
+conduct in that gap. Marginal (not conditional) coverage is delivered;
+conditional coverage by prompt-difficulty strata via Mondrian conformal is the
+designated next theoretical step. The field E2 audit adds: with discrete score
+atoms (39.7\% ties observed), the coverage-distribution refinement requires
+randomized tie-breaking; the exceedance bound itself is tie-safe and held.
+
+\textbf{8.3 Relaxation gap.} A continuous zero of $f_3$ certifies only relaxed
+consistency (Prop.~\ref{prop:gap}); the certifier closes the gap at worst-case
+exponential cost, and Prop.~\ref{prop:no-poly} shows this is unavoidable
+unless $\mathrm P=\mathrm{NP}$.
+
+\textbf{8.4 Scope of the field evidence.} \S\ref{sec:field} uses
+template-inserted violations on one corpus under one instrument (per the
+registered protocol); the localization claim is scoped to compositional
+violations, and the V1/V2 regime is provably counting-equivalent
+(Prop.~\ref{prop:struct-equiv}). Replication with a second instrument, an
+organic-error corpus, and MATH are registered next steps
+(\S\ref{sec:protocol}(8)).
+
+\textbf{8.5 Lexicographic repair order.} A convention; no optimality claim is
+made.
+
+\begin{center}
+\fbox{\parbox{0.92\linewidth}{\textbf{Open Problem}
+\refstepcounter{theorem}\label{open:tarski}
+(Tarski unification). Recast the hard and soft logic layers as sheaves valued
+in complete lattices with the Tarski Laplacian \cite{ghrist2022}, where global
+sections are fixed points and Boolean semantics is native.}}
+\end{center}
+
+\medskip
+\noindent\textbf{Open Problem (holonomy power theorem).} In a random-chain
+model with a planted closing-claim violation of gap $\gamma$ and extraction
+noise $\sigma$, derive the explicit power curve of the cycle-holonomy
+statistic as a function of $\gamma/\sigma$ and the cycle's minimum edge
+confidence, upgrading the observed field separation
+(Table~\ref{tab:field}) into a predictive theorem.

@@ -13,3 +13,6 @@ access_token
 *.log
 *.synctex.gz
 feedback from agent.txt
+*.out
+*.toc
+build*.log

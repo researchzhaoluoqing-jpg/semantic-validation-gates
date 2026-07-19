@@ -1,0 +1,144 @@
+\section{Calibration: Finite-Sample Guarantees Under Three Regimes}
+\label{sec:calibration}
+
+\subsection{The guarantee is instrument-inclusive}
+
+\begin{proposition}[Composite conformal validity]
+\label{prop:composite}
+Fix the instrument $I$ before calibration and let $f_i=g_i\circ I$. If
+calibration and test outputs are exchangeable as raw texts (A3), then
+Theorem~\ref{thm:split} below holds verbatim for the composite score.
+\end{proposition}
+\begin{proof}
+Exchangeability is preserved under a fixed measurable map applied identically
+to every element of the sequence; the rank argument of
+Theorem~\ref{thm:split} then applies to the composite scores unchanged.
+\end{proof}
+
+Claim-extraction truncation and out-of-distribution NLI behavior therefore
+cannot inflate the false-rejection rate: instrument noise enters calibration
+and test exchangeably. What instrument error does affect is detection power
+(Type-II), quantified in \S\ref{sec:power} and audited in
+\S\ref{sec:protocol}.
+
+\subsection{Regime I --- exchangeable deployment: split conformal}
+
+With a calibration set of $n_i$ outputs certified valid on dimension $i$, set
+$\tau_i$ to the $\lceil(n_i+1)(1-\alpha_i)\rceil$-th smallest calibration
+score.
+
+\begin{theorem}[Distribution-free false-rejection control]
+\label{thm:split}
+Under (A3), for a new valid output $y$, $\mathbb P(\rho_i(y)>1)\le\alpha_i$;
+if scores are almost surely distinct, also
+$\mathbb P(\rho_i(y)>1)\ge\alpha_i-\frac1{n_i+1}$.
+\end{theorem}
+\begin{proof}
+By exchangeability, the rank of $f_i(y)$ among the $n_i+1$ scores is uniform
+on $\{1,\dots,n_i+1\}$ (ties only help the upper bound). Exceedance of
+$\tau_i$ requires the rank to exceed $\lceil(n_i+1)(1-\alpha_i)\rceil$, an
+event of probability at most $\alpha_i$; the lower bound follows from the same
+rank computation without ties.
+\end{proof}
+
+This is precisely the property v1's ``EVT conjecture'' asked for, obtained as
+a three-line finite-sample theorem with no distributional assumptions.
+(Extreme-value refinements remain optional; note that all gate scores here are
+bounded, placing them in the Weibull, not Fr\'echet, max-domain of attraction
+\cite{coles2001}---any EVT use must carry domain diagnostics.) The
+field-study coverage audit (\S\ref{sec:field-e2}) verifies the exceedance
+bound on real chains ($0.095\le\alpha=0.10$) and shows that the
+coverage-\emph{distribution} refinement $\mathrm{Beta}(m,n+1-m)$ additionally
+requires (near-)continuous scores: with $39.7\%$ tied scores it is rejected
+while the bound itself holds; randomized tie-breaking or the tie-safe
+statement should be used with discrete score atoms.
+
+\begin{theorem}[Family-wise validity, safety-first]
+\label{thm:familywise}
+Choosing $\alpha_i=\alpha/5$ yields
+$\mathbb P(\exists i:\rho_i(y)>1\mid y\text{ fully valid})\le\alpha$ by the
+union bound. Where a fixed-sequence procedure is used to recover power under
+dependence, gates are tested safety-first ($f_4$ at full level $\alpha$ before
+all others), aligning power allocation with the veto semantics of
+\S\ref{sec:veto}.
+\end{theorem}
+
+\subsection{Regime II --- estimable covariate shift: weighted conformal}
+
+When the shift is estimable (e.g.\ a changed prompt mix), weighted conformal
+prediction \cite{tibshirani2019} restores the per-instance guarantee with
+likelihood-ratio weights $\hat w(x)$; weight-estimation error enters as an
+explicit total-variation correction. (Online density-ratio estimation as in
+\cite{cofact2026} is a compatible single-gate instance.)
+
+\subsection{Regime III --- arbitrary/adversarial drift: adaptive conformal
+inference}
+\label{sec:regime3}
+
+Deployment default: the online update of Gibbs and Cand\`es \cite{gibbs2021},
+$\alpha_{t+1}=\alpha_t+\gamma(\alpha-\mathrm{err}_t)$, with the conformal
+quantile taken at level $1-\alpha_t$.
+
+\begin{theorem}[{\cite{gibbs2021}}, restated]
+\label{thm:aci}
+For arbitrary---including adversarially chosen---sequences of distributions,
+\[
+\Bigl|\tfrac1T\textstyle\sum_{t\le T}\mathrm{err}_t-\alpha\Bigr|
+\le\frac{\max(\alpha_1,1-\alpha_1)+\gamma}{\gamma T}\to 0 .
+\]
+\end{theorem}
+
+Long-run false-rejection frequency converges to nominal $\alpha$ with no
+exchangeability or stationarity assumption; the guarantee does not lapse
+between recalibrations because adaptation is per-step---there is no ``blind
+window'' at the level of long-run frequency. (A3) is thereby demoted from a
+load-bearing assumption to the condition under which the stronger per-instance
+bound of Theorem~\ref{thm:split} additionally holds.
+
+\paragraph{Monitoring and fail-safe posture.} Drift monitoring uses conformal
+test martingales / e-processes \cite{vovk2021}: anytime-valid, no scheduled
+testing lag, false-alarm control at every stopping time; the monitored
+features include the aggregate-MMD statistic of \S\ref{sec:gates}. Upon alarm
+and until re-validation, thresholds are tightened monotonically and low-margin
+outputs are routed to abstention or human review.
+
+\begin{proposition}[Safe-side degradation]
+\label{prop:safeside}
+Decreasing $\tau_i$ enlarges every rejection region and shrinks none; during
+the alarm state the probability of a false accept on any dimension is
+non-increasing relative to the pre-alarm configuration.
+\end{proposition}
+\begin{proof}
+$\{f_i>\tau_i\}$ is decreasing in $\tau_i$ under set inclusion.
+\end{proof}
+
+What is sacrificed under drift is throughput (more abstentions), never the
+safety direction of the error.
+
+\subsection{Power accounting}
+\label{sec:power}
+
+\begin{proposition}[Detection power lower bound]
+\label{prop:power}
+If an inserted violation survives claim decomposition with probability at
+least $1-\varepsilon_D$, is flagged as an edge by NLI with probability at
+least $1-\varepsilon_{\mathrm{NLI}}$ given survival, and, once in the graph,
+drives $\rho_3>1$ with probability at least $\pi_3$, then
+\[
+\mathbb P(\text{detected})\ge(1-\varepsilon_D)(1-\varepsilon_{\mathrm{NLI}})\,\pi_3 .
+\]
+\end{proposition}
+
+$\varepsilon_D$ and $\varepsilon_{\mathrm{NLI}}$ are estimated on the audit
+benchmarks of \S\ref{sec:protocol} with Clopper--Pearson intervals and enter
+the reported power certificate. \emph{Abstention rule:} if extraction coverage
+(fraction of tokens attributable to extracted claims) falls below a floor
+$c_{\min}$, the output is routed to abstention.
+
+\subsection{Reporting requirements}
+\label{sec:reporting}
+
+For every deployment: $n_i$; empirical coverage on held-out valid data with
+Clopper--Pearson intervals; ECE for every internal classifier ($f_2$'s NLI,
+$f_4$'s safety classifier); the e-process monitor state; and the regime
+(I/II/III) under which each guarantee is claimed.

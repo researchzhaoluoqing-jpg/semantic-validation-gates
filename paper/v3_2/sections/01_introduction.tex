@@ -1,0 +1,96 @@
+\section{Introduction}
+
+\subsection{Problem}
+
+Production systems increasingly interpose \emph{guardrail pipelines} between a
+language model and its consumers: stacks of validators for output structure,
+factuality, consistency, safety, and task adherence. These pipelines are
+effective engineering but carry no mathematical contract: which validator fires
+first is a configuration accident, error taxonomies are informal, and
+false-rejection rates are tuned by feel. Conversely, the academic literature
+supplies deep tools for individual dimensions---conformal factuality,
+consistency detection, safety classification, instruction-following
+evaluation---that do not talk to each other. This paper supplies the missing
+layer: a single formal system in which five validation dimensions are
+computable scores, thresholds carry finite-sample guarantees under explicitly
+graded distributional assumptions, the induced error taxonomy is complete and
+mutually exclusive, and safety violations cannot be masked.
+
+An earlier version of this work (v1) proposed the same five-gate architecture
+wrapped in differential-geometric language---Wasserstein projections onto
+convex sets, \v{C}ech obstruction classes with Hodge norms, isometric
+embeddings of Wasserstein geometry into Hilbert spaces---that was not
+constructible; Appendix~\ref{app:correction} records each defect and its
+repair, together with a field audit showing that the v1 instantiation is also
+empirically inert. The present version retains the architecture and delivers
+it with objects that exist.
+
+\subsection{Contributions}
+
+\begin{enumerate}
+\item Five gate scores $f_1,\dots,f_5$ (Format, Fact, Logic, Alignment,
+Intent), each with an explicit algorithm, estimator, and sensitivity analysis
+(\S\ref{sec:gates}).
+\item A logic gate built on a weighted cellular sheaf Laplacian over the
+extracted claim graph, unified with propositional constraints via
+relax-and-certify, together with an impossibility result
+(Prop.~\ref{prop:no-poly}) explaining why a certification layer is
+unavoidable, and a structural-equivalence result
+(Prop.~\ref{prop:struct-equiv}) delimiting exactly when the sheaf energy can
+add capability beyond weighted contradiction counting
+(\S\ref{sec:logic-gate}).
+\item Calibration with finite-sample guarantees across three deployment
+regimes: split conformal under exchangeability, weighted conformal under
+estimable covariate shift, and adaptive conformal inference whose long-run
+guarantee holds under arbitrary, including adversarial, drift
+(\S\ref{sec:calibration}). The guarantees are instrument-inclusive:
+claim-extraction and NLI errors cannot inflate the false-rejection rate
+(Prop.~\ref{prop:composite}).
+\item A decision architecture with unconditional parallel evaluation and a
+safety veto, provably immune to masking of alignment violations
+(\S\ref{sec:decision}), together with an anytime computational profile whose
+safety fast path is a single classifier forward pass (\S\ref{sec:compute}).
+\item A mechanism study on synthetic chains (\S\ref{sec:mechanism}) and its
+\emph{pre-registered field execution} with a calibrated NLI on real GSM8K
+chains (\S\ref{sec:field}): the field study adjudicates the mechanism's two
+assumptions, confirms the pre-registered success criteria on compositional
+violations (AUROC $0.990$ vs.\ chance-level baselines; sole nonzero
+localization), and shows that on structure-free claim graphs the sheaf energy
+provably reduces to counting---turning the boundary of the tool's value into a
+theorem plus a measurement rather than a conjecture.
+\end{enumerate}
+
+\subsection{Design principles}
+
+\textbf{(P1)} Every object is mathematically well-defined and computable from
+real model outputs. \textbf{(P2)} Every guarantee is finite-sample, with its
+assumptions stated next to it. \textbf{(P3)} Signals of localized or
+safety-critical violations are aggregated by max/veto, never by mean or
+minimal-index truncation. \textbf{(P4)} Anything not meeting P1--P2 is labeled
+a design choice or an open problem.
+
+\subsection{Related work}
+
+Each pillar has independent precedents; the contribution here is the certified
+composition. \emph{Sheaves for consistency:} Huntsman, Robinson and Huntsman
+\cite{huntsman2024} demonstrated that LLMs produce usable numerical
+consistency ratings of claim pairs and proposed sheaf theory for lifting local
+ratings to global consistency of hypertexts, also noting the relevance of
+CNF-SAT; our \S\ref{sec:logic-gate} differs in operating on a single output's
+claim graph, weighting the Laplacian by calibrated NLI confidences with a
+proven sensitivity bound, and embedding the score in a calibrated gate rather
+than a stand-alone analysis. \emph{Conformal guarantees for LLMs:} conformal
+factuality \cite{mohri2024}, conformal abstention for hallucination control
+\cite{yadkori2024}, boosted and conditional variants \cite{cherian2024}, and
+conformal factuality under covariate shift via online density-ratio estimation
+\cite{cofact2026} calibrate a single dimension; \S\ref{sec:calibration}
+calibrates a five-dimensional gate vector jointly with family-wise control and
+a veto-aware fixed-sequence procedure. \emph{Guardrail pipelines:} production
+frameworks (Guardrails AI, NeMo Guardrails \cite{rebedea2023}, and similar)
+stack validators covering roughly our five dimensions but provide no
+statistical guarantees, no unified severity measure, and no masking analysis;
+this paper can be read as the theory layer for that architecture.
+Multi-dimensional evaluation suites such as HELM \cite{liang2023} systematize
+offline benchmark dimensions for scoring models; our object is
+different---runtime, per-output verification with per-instance guarantees and
+block/repair decisions.

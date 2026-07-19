@@ -1,0 +1,237 @@
+\section{The Five Gates}
+\label{sec:gates}
+
+\subsection{Format gate $f_1$}
+
+Let the structural specification be a formal language $L(G)$ (context-free
+grammar, JSON-Schema compilation, or regular constraint set). Define
+\[
+f_1(y)=\frac{d_{\mathrm{edit}}(y,L(G))}{|y|},\qquad
+d_{\mathrm{edit}}(y,L)=\min_{z\in L} d_{\mathrm{Lev}}(y,z).
+\]
+For CFGs this is computable exactly by error-correcting Earley/CYK parsing
+\cite{aho1972} in $O(|G|^2|y|^3)$; for regular $L$, by product-automaton
+shortest path in $O(|A||y|)$. The gate is deterministic with zero estimation
+error, and $f_1(y)=0\iff y\in L(G)$. No Wasserstein projection is needed; the
+v1 operator $\mathrm{Proj}_{P_{\mathrm{form}}}$ is replaced by an exact
+combinatorial minimization with a known algorithm.
+
+\subsection{Fact gate $f_2$}
+
+Decompose $y$ into claims $c_1,\dots,c_m$; retrieve evidence $E_j$ from a
+verified knowledge base $\mathcal K$; let $s_j$ be the calibrated entailment
+probability from an NLI model (isotonic or Platt calibration on held-out data;
+ECE reported). Per P3,
+\[
+f_2(y)=1-\min_{1\le j\le m}s_j,
+\]
+with a mandatory \emph{abstention state}: when retrieval confidence for a
+claim falls below a floor, the output is routed to abstention rather than
+scored---an unverifiable claim must not receive a numerical pass. (This
+removes the v1 ambiguity in which kernel-smoothing of a reference measure
+silently interpolated over missing knowledge.) Optionally, against a reference
+sample from $\mathcal K$ one may use the Sinkhorn divergence
+$S_\varepsilon(\hat\mu_y,\hat\nu_{\mathrm{fact}})$, which metrizes weak
+convergence with dimension-robust sample complexity $O(n^{-1/2})$
+\cite{genevay2019}; plug-in $W_2$ degrades as $O(n^{-1/d})$ \cite{fournier2015}
+and is therefore not used anywhere in this paper.
+
+\subsection{Logic gate $f_3$: weighted sheaf Laplacian, unified energy,
+relax-and-certify}
+\label{sec:logic-gate}
+
+\paragraph{Claim graph.} $G=(V,E)$: vertices are claims; an edge $(u,v)$ with
+relation type (entail / equiv / contradict) is added when the NLI model flags
+it, carrying its calibrated confidence $w_e\in[0,1]$.
+
+\paragraph{Weighted sheaf.} Attach to $G$ a cellular sheaf $\mathcal F$
+\cite{hansen2019}: stalks $\mathcal F(v)=\mathbb R^k$ (truth coordinates of
+claim $v$); restriction maps encode the relation (identity for entailment and
+equivalence, the negation lift $t\mapsto 1-t$ for contradiction). With
+coboundary $\delta:C^0\to C^1$ and $W=\mathrm{diag}(w_e)$, the weighted sheaf
+Laplacian is $L_{\mathcal F}(w)=\delta^\top W\delta$, and the raw score of an
+assignment $x$ is $\langle x,L_{\mathcal F}(w)x\rangle^{1/2}$: a
+finite-dimensional Hodge-type quantity, computable in $O(|V|^3)$ worst case
+and by sparse solvers in practice. Global sections
+$\ker\delta=H^0(G;\mathcal F)$ are exactly the edge-consistent assignments, so
+the score measures the obstruction to gluing the asserted claims into a global
+section---the v1 intuition, now on a specified finite object.
+
+\begin{proposition}[Lipschitz dependence on NLI confidences]
+\label{prop:lipschitz}
+If $\|x_v\|\le R$ and restriction maps have operator norm at most $1$, then
+for confidence vectors $w,w'$,
+\[
+\bigl|\langle x,L_{\mathcal F}(w)x\rangle-\langle x,L_{\mathcal F}(w')x\rangle\bigr|
+\le 4R^2\|w-w'\|_1 .
+\]
+\end{proposition}
+\begin{proof}
+The energy is $\sum_e w_e\|(\delta x)_e\|^2$ with $\|(\delta x)_e\|\le 2R$;
+subtract termwise.
+\end{proof}
+
+An out-of-distribution NLI perturbation therefore produces a bounded,
+quantified score perturbation, which composes with margin stability
+(Prop.~\ref{prop:margin}); ``garbage in, garbage out'' is replaced by a
+sensitivity bound. The bound is verified numerically in the reference
+implementation.
+
+\paragraph{Unified logic energy.} Propositional constraints enter as sheaf
+data: lift Boolean assignments to $[0,1]$ stalks on the factor graph of
+extracted constraints, with restriction maps encoding literal polarity; let
+$X$ be the linear-relaxation polytope of the clauses. Define the (pairwise)
+relaxed energy
+\[
+E_{\mathrm{pair}}(y)=\min_{\substack{x\in X\\ x\equiv 1 \text{ on asserted claims}}}
+\langle x, L_{\mathcal F}(w)\, x\rangle^{1/2}.
+\]
+The objective is a convex piecewise quadratic; projected gradient or
+interior-point methods find the global minimum. When a numeric extraction
+channel is available (equation chains with value flow), the same construction
+on affine restriction data yields a cycle-holonomy energy
+$E_{\mathrm{num}}(y)$: on a spanning tree the asserted value deltas propagate
+potentials, and each non-tree edge contributes its weighted closure gap
+(length-invariant and localized at the closing edge).
+
+\begin{definition}[Channel aggregation; max-form $f_3$]
+\label{def:maxform}
+With channel thresholds $\tau_{\mathrm{pair}},\tau_{\mathrm{num}}$ calibrated
+on clean data (split conformal per channel),
+\[
+f_3(y)=\max\!\Bigl(\tfrac{E_{\mathrm{pair}}(y)}{\tau_{\mathrm{pair}}},\;
+\tfrac{E_{\mathrm{num}}(y)}{\tau_{\mathrm{num}}}\Bigr).
+\]
+The aggregation form is forced by the same dilution phenomenon as
+Prop.~\ref{prop:dilution} one level down: additive (quadrature) combination
+lets pairwise-NLI noise on ordinary text drown the compositional channel. In
+the field study of \S\ref{sec:field}, the quadrature form scores AUROC
+$0.586$ on compositional violations and the max-form $0.990$ \emph{from the
+same channel values}. Per-channel validity composes by the union bound
+(Theorem~\ref{thm:familywise} applied channel-wise).
+\end{definition}
+
+\begin{proposition}[Relaxation gap]
+\label{prop:gap}
+(i) If the asserted constraint system is Boolean-satisfiable then
+$E_{\mathrm{pair}}(y)=0$. (ii) The converse fails in general: LP/SDP
+integrality-gap instances (e.g.\ MAX-2-SAT \cite{goemans1995}) yield
+fractional zeros for unsatisfiable systems.
+\end{proposition}
+\begin{proof}[Proof sketch]
+(i) A Boolean satisfying assignment lies in $X$ and has zero residual on every
+edge by construction of the restriction maps. (ii) Standard gap instances
+embed directly.
+\end{proof}
+
+\begin{proposition}[No exact polynomial unification]
+\label{prop:no-poly}
+A polynomial-time computable continuous score $s$ with $s(y)=0$ iff the
+asserted propositional system is Boolean-satisfiable would decide SAT in
+polynomial time. Hence, unless $\mathrm P=\mathrm{NP}$, every polynomial
+unified score is incomplete on the hard fragment.
+\end{proposition}
+
+\begin{proposition}[Structural equivalence on assertion-only acyclic graphs]
+\label{prop:struct-equiv}
+Let $G$ be a claim graph in which every vertex is asserted (clamped to $1$)
+and whose edges are entailments and contradictions with weights $w_e$; let
+$C(G)$ denote its contradiction edge set. Then
+\[
+E_{\mathrm{pair}}(y)^2=\sum_{e\in C(G)}w_e ,
+\]
+i.e.\ the relaxed unified energy is a strictly monotone function of the
+weighted contradiction sum (WSUM) and induces identical rankings (identical
+AUROC and identical false-positive rate at every operating point).
+\end{proposition}
+\begin{proof}
+With every vertex clamped there is no free variable. Entailment residuals
+$\max(0,x_u-x_v)$ vanish at $x\equiv 1$, and each contradiction residual is
+$x_u+x_v-1=1$; the constrained minimum is attained at the unique feasible
+point.
+\end{proof}
+
+\begin{remark}[Where the sheaf can add capability]
+\label{rem:boundary}
+Prop.~\ref{prop:struct-equiv} delimits the tool's value: any detection
+separation between the sheaf energy and weighted counting requires
+\emph{structure}---free (non-asserted) vertices whose values the global
+minimization can reconcile, cycles in the numeric/affine view whose holonomy
+no single edge witnesses, or the certificate layer. The field study of
+\S\ref{sec:field} confirms both directions of this boundary empirically.
+\end{remark}
+
+\paragraph{Relax-and-certify.} Consequently a SAT/SMT certifier is
+retained---not as a parallel gate but as a \emph{certification layer}: it
+verifies (rounds) near-zero relaxed optima and, on UNSAT, returns a
+deletion-minimal unsatisfiable core whose size is an exact, interpretable
+severity overriding a passing continuous score. The soft/hard dichotomy of
+earlier drafts dissolves into the standard relax-and-certify hierarchy of
+modern optimization. As a diagnostic, the edges carrying the largest weighted
+residual energy localize the inconsistency; localization is evaluated in
+\S\ref{sec:field}. A lattice-valued unification via the Tarski Laplacian
+\cite{ghrist2022} is recorded as Open Problem~\ref{open:tarski}.
+
+\subsection{Alignment gate $f_4$}
+
+$f_4(y)=\sigma^{-1}(\hat p_{\mathrm{unsafe}}(y))$: the logit of a safety
+classifier calibrated on held-out labels (ECE reported), composed with the
+conformal layer of \S\ref{sec:calibration} so that a bounded false-rejection
+rate on safe outputs holds as a theorem. \emph{Computational independence}
+(structural requirement): $f_4$ operates on the raw text $y$ and does not
+factor through $D$, the claim graph, or format parsing; a format-corrupted
+output therefore cannot even computationally block its own safety evaluation.
+Combined with the veto of \S\ref{sec:veto}, the masking channel is closed at
+the dataflow level as well as the decision level. (The v1 formulation---$W_2$
+projection onto a ``compact convex set of safe behaviors''---is dropped: the
+set was never constructed and metric projection in positively curved
+Wasserstein space is not well-posed.)
+
+\subsection{Intent gate $f_5$}
+
+\begin{proposition}[MMD dilution]
+\label{prop:dilution}
+Let $\hat\mu,\hat\mu'$ be empirical measures on $m$ units differing in exactly
+one unit, with kernel bound $k\le K$. Then
+$\MMD_k(\hat\mu,\hat\mu')\le 2\sqrt K/m$.
+\end{proposition}
+\begin{proof}
+$\psi(\hat\mu)-\psi(\hat\mu')=\frac1m(\phi(e_j)-\phi(e'_j))$ and
+$\|\phi(\cdot)\|\le\sqrt K$.
+\end{proof}
+
+A fatal single-unit violation (one inserted negation) moves an aggregate-MMD
+score by $O(1/m)$---vanishing in long outputs. Hence, per P3,
+\[
+f_5(y)=\max\bigl(f_5^{\mathrm{hard}}(y),\,f_5^{\mathrm{soft}}(y)\bigr).
+\]
+\emph{Hard component (exact).} Compile the instruction into programmatically
+checkable constraints $\{\kappa_\ell\}$ (length, inclusion/exclusion,
+ordering---the IFEval regime \cite{zhou2023});
+$f_5^{\mathrm{hard}}=\max_\ell \mathbf 1[\kappa_\ell\text{ violated}]$. A
+single negation that flips a checkable constraint scores $1$ regardless of
+$m$. \emph{Soft component (worst-unit, directed Hausdorff in feature space).}
+\[
+f_5^{\mathrm{soft}}(y)=\max_j\;\min_{r\in\mathrm{supp}(\nu_{\mathrm{intent}})}
+\bigl\|\phi(E(u_j))-\phi(E(r))\bigr\|_{\mathcal H_k},
+\]
+where $\nu_{\mathrm{intent}}$ is the reference measure of the task objective.
+
+\begin{proposition}[Unit-level sensitivity]
+\label{prop:unit-sens}
+If one unit lies at feature distance at least $\Delta$ from the entire intent
+reference set, then $f_5^{\mathrm{soft}}\ge\Delta$, independently of $m$.
+\end{proposition}
+
+The kernel mean embedding $\psi(\mu)=\int\phi\,d\mu$ is isometric with respect
+to MMD by construction, and MMD is a metric for characteristic $k$
+\cite{gretton2012}. This replaces the v1 claim of an isometric RKHS embedding
+of the $W_2$ geometry, which is impossible for $d\ge 3$ \cite{andoni2018}.
+Three honesty notes: (i) cross-encoder relevance scores are generally not
+positive semidefinite and may be used as raw scores, not kernels---conformal
+calibration is agnostic to the score's provenance; (ii) the $O(n^{-1/2})$ MMD
+concentration bound applies to the mean-embedding form; the max-form relies on
+conformal calibration for validity and on \S\ref{sec:protocol} for empirical
+power; (iii) aggregate MMD is retained solely as a drift-monitoring feature
+(\S\ref{sec:regime3}), where distribution-level sensitivity is exactly what is
+wanted.

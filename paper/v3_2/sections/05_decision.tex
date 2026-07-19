@@ -1,0 +1,166 @@
+\section{Decision Architecture: Partition, Veto, Stability}
+\label{sec:decision}
+
+\subsection{Parallel evaluation and the partition theorem}
+
+All five scores are computed for every output, unconditionally; no gate's
+computation may be short-circuited by another's failure. The primary logged
+object is the \emph{failure vector} $K(y)=\{i:\rho_i(y)>1\}$.
+
+\begin{lemma}[Measurability]
+Each $f_i$ of \S\ref{sec:gates} is measurable: $f_1$ is computable; $f_2,f_4$
+are compositions of measurable maps with continuous links; $f_3$ is continuous
+in the assignment for each fixed graph, with graph extraction a measurable map
+into a countable set of structures; $f_5$ is a max/min of continuous
+functionals. Hence all maps below are measurable.
+\end{lemma}
+
+\begin{theorem}[Completeness and mutual exclusivity]
+\label{thm:partition}
+For any finite family of measurable gates, with $\Pi(y)=\min K(y)$ (and $0$ if
+$K(y)=\varnothing$),
+\[
+\Sigma^*=V_{\mathrm{valid}}\sqcup\bigsqcup_{i=1}^5 E_i,\qquad
+E_i=\{y:\rho_i(y)>1,\ \rho_j(y)\le 1\ \forall j<i\}.
+\]
+\end{theorem}
+\begin{proof}
+Well-ordering of the failure set $K(y)$.
+\end{proof}
+
+\begin{remark}[Honesty]
+Theorem~\ref{thm:partition} holds for any five measurable criteria and
+certifies nothing about gate quality; it is bookkeeping. The substantive
+guarantees are Theorems~\ref{thm:split}--\ref{thm:aci} and the propositions of
+this section.
+\end{remark}
+
+\subsection{Safety veto and the demotion of $\Pi$}
+\label{sec:veto}
+
+\[
+\dec(y)=
+\begin{cases}
+\textbf{Block} & 4\in K(y)\quad(\text{safety veto, order-independent})\\
+\textbf{Repair via }\Pi_{-4}(y) & K(y)\ne\varnothing,\ 4\notin K(y)\\
+\textbf{Pass} & K(y)=\varnothing
+\end{cases}
+\]
+where $\Pi_{-4}(y)=\min K(y)$ over the non-veto gates. $\Pi$ survives only as
+a repair-routing heuristic (``fix the format before re-checking facts''), a
+role in which lexicographic order is defensible; it carries no reporting or
+risk semantics.
+
+\begin{proposition}[No masking]
+\label{prop:nomask}
+Under $\dec$, every output with $\rho_4(y)>1$ is Blocked regardless of
+$\rho_1,\rho_2,\rho_3,\rho_5$. The scenario ``$f_1$ fails first and suppresses
+an $f_4$ violation'' is unrealizable: ``first'' does not exist at the decision
+layer, and by \S\ref{sec:gates} it does not exist at the dataflow layer
+either.
+\end{proposition}
+
+\begin{remark}[$\Pi$ is not a security boundary]
+Consider an adversary who deliberately plants a mild fact violation so that
+$f_2$ ``fails first.'' Against a sequential, short-circuiting evaluator this
+attack masks a co-occurring alignment violation---it is valid against the v1
+semantics. Under the present architecture it accomplishes nothing: all five
+scores are computed unconditionally, $K(y)$ records both failures, $f_4$ reads
+the raw text, and $\dec$ blocks on $4\in K(y)$ irrespective of every other
+entry. Mutual exclusivity is a property of the reporting taxonomy $\Pi$ (one
+primary label per output); diagnostic completeness is carried by $K(y)$, which
+is always full. The security boundary is $\dec$, never $\Pi$.
+\end{remark}
+
+\subsection{Well-posedness and stability}
+
+\begin{proposition}[Almost-sure well-posedness]
+\label{prop:wellposed}
+If each $f_i(y)$ has an atomless law at $\tau_i$ under the deployment
+distribution, then almost surely every output has strictly positive margin
+$\gamma(y)=\min_i|f_i(y)-\tau_i|$, and $\Pi$, $K$, $\dec$ are locally constant
+under score perturbations smaller than $\gamma(y)$.
+\end{proposition}
+
+The condition is empirically checkable via continuous score histograms; this
+replaces the v1 conjecture that invoked a (non-existent) canonical reference
+measure on Wasserstein space and a Hausdorff-dimension bound that is
+meaningless in infinite dimensions.
+
+\paragraph{High dimensions and measure concentration.} The classification
+factors through the five scalar scores: $\dec$ depends on $y$ only via
+$(f_1(y),\dots,f_5(y))\in\mathbb R^5$. High-dimensional geometry of the
+embedding space therefore enters only through the one-dimensional law of each
+score; no claim about the Hausdorff dimension or measure of a boundary in
+$\PM$ is made or needed---the v1 boundary conjecture is not repaired but
+dissolved. The legitimate residue of the concentration concern is empirical:
+score laws might concentrate near $\tau_i$, producing many small-margin
+outputs. Two answers. First, the validity guarantees
+(Theorems~\ref{thm:split} and \ref{thm:aci}) hold regardless of
+concentration; margins matter only for estimation stability
+(Prop.~\ref{prop:margin}). Second, we mandate reporting the empirical margin
+distribution $\hat{\mathbb P}(|f_i-\tau_i|\le\delta)$ and support an optional
+\emph{abstention band}: outputs with margin below $\delta$ are routed to
+review, converting boundary ambiguity from a silent failure mode into a
+measured abstention rate.
+
+\begin{proposition}[Margin-based stability of estimated classification]
+\label{prop:margin}
+If simultaneously $|\hat f_i-f_i|\le\varepsilon_i$ for all $i$ with
+probability at least $1-\delta$ (MMD concentration for the mean form;
+$\varepsilon_1=0$; Prop.~\ref{prop:lipschitz} converting NLI-confidence error
+into $\varepsilon_3$) and $\gamma(y)>\max_i\varepsilon_i$, then
+$\widehat{\dec}(y)=\dec(y)$ with probability at least $1-\delta$.
+\end{proposition}
+
+\begin{remark}[Stability--sensitivity separation]
+Two perturbation classes must not be conflated. \emph{Measurement}
+perturbations (sampling noise, NLI-confidence noise) should not flip
+decisions; Prop.~\ref{prop:margin} delivers this above the margin.
+\emph{Semantic} perturbations (inserting a single negation) should flip
+decisions, and the gates are engineered to be non-smooth in exactly this
+direction: a single-unit flip at feature distance $\Delta$ moves
+$f_5^{\mathrm{soft}}$ by at least $\Delta$ (Prop.~\ref{prop:unit-sens}) and
+moves the min/max aggregations of $f_2$ and $f_5^{\mathrm{hard}}$ by $O(1)$,
+while measurement noise moves scores by at most $\varepsilon$; the two regimes
+are distinguishable whenever $\Delta>2\varepsilon$. Local constancy is claimed
+in the score metric, never in the semantic metric; demanding the latter would
+reintroduce the dilution pathology that Prop.~\ref{prop:dilution} rules out.
+\end{remark}
+
+\begin{proposition}[One-sided metric comparison]
+For $L$-Lipschitz bounded $k$ and measures supported in the $R$-ball,
+$\MMD_k\le C(L,K)\,W_1\le C(L,K)\,W_2$. The converse inequality fails in
+general; only this direction is used, and only for interpretability (small
+transport perturbations of an output cannot inflate the soft intent score),
+never for a guarantee.
+\end{proposition}
+
+This replaces the v1 conjecture of global Lipschitz equivalence of $W_2$,
+harmonic, and RKHS norms, which is false as stated.
+
+\subsection{Computational profile and anytime operation}
+\label{sec:compute}
+
+Latency is graded per gate, and the architecture guarantees that safety never
+waits for expensive computation. \emph{Fast path (synchronous, per output):}
+$f_4$ is one classifier forward pass on the raw text, and $f_1$ is linear-time
+validation (membership checking), with the cubic error-correcting parse
+invoked only on failure to quantify severity; the veto of \S\ref{sec:veto}
+therefore executes within a single forward-pass latency. \emph{Slow path
+(deadline-bounded):} $f_2$ is dominated by retrieval and NLI passes; the
+relaxed energy of $f_3$ is a sparse convex program on a claim graph with $m$
+vertices ($m$ in the tens for typical outputs), i.e.\ millisecond-scale linear
+algebra, and is updatable incrementally under streaming generation by low-rank
+updates of $L_{\mathcal F}(w)$ as claims and edges arrive. The SAT certifier
+is invoked lazily under a deadline: the relaxed score is an anytime answer,
+and if the deadline expires the output carries an ``uncertified'' flag with
+conservative handling. This is a principled rather than an apologetic design:
+Prop.~\ref{prop:no-poly} shows the worst-case certification cost is
+unavoidable for any exact method, so the only honest options are anytime
+relaxation plus optional certification---which is what the gate does.
+\emph{Scope honesty:} microsecond decision loops (e.g.\ high-frequency
+trading) are outside the scope of any semantic verification---no entailment
+model evaluates in microseconds; the target regime is the one in which
+generation itself costs $0.1$--$10$\,s and full verification runs at a
+fraction of that budget, with the safety fast path always inside it.

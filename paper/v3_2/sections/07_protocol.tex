@@ -1,0 +1,64 @@
+\section{Pre-Registered Empirical Protocol}
+\label{sec:protocol}
+
+The protocol below was registered in v3.1. Status markers (v3.2) record what
+the M1 field study has executed; the remainder is the active experimental
+agenda.
+
+\textbf{(1) Datasets and gate mapping.} \emph{Format:} structured-output
+benchmarks plus synthetic grammar corruption at controlled edit distances
+(ground-truth $f_1$). \emph{Fact:} TruthfulQA and FEVER-style verification
+with a frozen retrieval index. \emph{Logic:} GSM8K/MATH step-consistency with
+adversarial contradiction insertion at known graph locations and controlled
+distance $k$. \emph{[Executed for GSM8K in \S\ref{sec:field}; MATH pending an
+audited equation extractor.]} \emph{Alignment:} human-adjudicated safety
+benchmarks. \emph{Intent:} IFEval-style verifiable-constraint suites.
+
+\textbf{(2) Primary metrics.} Per-gate AUROC and FPR at 95\% TPR; empirical
+conformal coverage versus nominal $\alpha$ with Clopper--Pearson intervals (a
+direct field test of Theorem~\ref{thm:split}) \emph{[executed:
+\S\ref{sec:field-e2}]}; ACI long-run error tracking under injected drift
+(Theorem~\ref{thm:aci}); ECE of internal classifiers \emph{[executed for the
+NLI instrument]}; end-to-end $\dec$ accuracy against human triage.
+
+\textbf{(3) Ablations with pre-registered predictions.}
+(a) MMD vs.\ Sinkhorn vs.\ plug-in $W_2$: plug-in $W_2$ degrades with
+embedding dimension per its $n^{-1/d}$ rate; the others do not.
+(b) \emph{Sheaf vs.\ counting vs.\ SAT-only on real chains---the empirical
+linchpin.} \emph{[Executed: \S\ref{sec:field}. Success criteria met on the
+compositional cell (\(\Delta\)AUROC $+0.489$, Holm $p=0.0018$, \textsc{Wsum}
+clause satisfied); the distance-collapse pattern of
+Table~\ref{tab:simulation} does not transfer to verbatim negations because
+(S1) fails in the field; V4's mechanism is vacuous under a calibrated
+instrument because (S2) fails. The claim is re-scoped accordingly
+(Prop.~\ref{prop:struct-equiv}, Remark~\ref{rem:boundary}).]}
+(c) Lexicographic $\Pi$ vs.\ full $K(y)$ for repair routing.
+(d) Mean-MMD vs.\ max-form $f_5$ on a single-negation adversarial suite: the
+mean form's miss rate tends to $1$ as $m$ grows, by
+Prop.~\ref{prop:dilution}.
+
+\textbf{(4) Assumption tests.} Direct measurement of (S1) and (S2).
+\emph{[Executed: both fail in the field; see \S\ref{sec:field}. This is the
+protocol working as intended---the simulation's premises were falsifiable and
+have been adjudicated.]}
+
+\textbf{(5) Dependence diagnostics.} Empirical correlation matrix of
+$(f_1,\dots,f_5)$; strong dependence motivates the safety-first
+fixed-sequence procedure of Theorem~\ref{thm:familywise}.
+
+\textbf{(6) Instrument audit.} Human-annotated decomposition benchmark for
+$\varepsilon_D$ (claim-level recall, Clopper--Pearson interval);
+edge-detection benchmark with adversarial paraphrase/negation for
+$\varepsilon_{\mathrm{NLI}}$; abstention floor $c_{\min}$ reported with the
+resulting abstention rate; all feeding the power certificate of
+Prop.~\ref{prop:power}.
+
+\textbf{(7) Drift monitoring.} E-process monitor state and recalibration
+events logged; coverage audited within drift episodes, where the Regime-III
+guarantee is exactly the testable object.
+
+\textbf{(8) Registered next steps (v3.2).} Scale-up ($n=1{,}000$/cell) with
+template-family robustness; replication with an architecture-distinct
+instrument (RoBERTa-large-MNLI); an organic-error corpus (model-generated
+solutions with execution-labeled compositional errors) replacing template
+insertion for the headline claim.

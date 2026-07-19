@@ -1,0 +1,182 @@
+\section{Mechanism Study and Pre-Registered Field Study: Sheaf Energy versus
+Contradiction Counting}
+\label{sec:mechanism}
+
+The framework's mathematical identity rests on one empirical question: does
+the sheaf energy $f_3$ add signal beyond the trivial baseline that counts
+NLI-flagged contradiction edges above a decision threshold? This section
+answers it in two stages: a simulation that isolates the \emph{mechanism} by
+which a separation could arise (\S\ref{sec:simulation}, unchanged from v3.1),
+and the pre-registered \emph{field study} that executed the protocol with a
+real, calibrated instrument on real reasoning chains (\S\ref{sec:field}, new
+in v3.2). The field study adjudicates the simulation's assumptions, confirms
+the pre-registered success criteria where the separation is structural, and
+sharpens the claim into Prop.~\ref{prop:struct-equiv}.
+
+\subsection{Mechanism simulation}
+\label{sec:simulation}
+
+The simulation isolates the mechanism under two documented assumptions about
+NLI behavior:
+
+\begin{itemize}
+\item[(S1)] \emph{Distance decay.} The confidence assigned by a pairwise NLI
+model to the direct contradiction edge decays with the semantic/reasoning
+distance $k$ between the violating statement and the claim it contradicts; in
+the simulation, $c(k)=\mathrm{clip}(0.95-0.13k+\mathcal N(0,0.06))$, falling
+below the standard $0.5$ decision threshold around $k\ge 3$.
+\item[(S2)] \emph{Noise in both classes.} Hedged or hypothetical claims
+(considered and rejected by the text, hence not asserted) are flagged by NLI
+as contradicting asserted claims with confidence $w\sim U(0.55,0.85)$; and
+spurious sub-threshold asserted--asserted contradiction edges occur with
+$w\sim U(0.10,0.45)$.
+\end{itemize}
+
+\paragraph{Setup.} Synthetic reasoning chains of six asserted claims connected
+by entailment edges ($w\sim\mathrm{Beta}(20,2)$); violated cases append an
+asserted statement contradicting claim $A_0$ at step distance
+$k\in\{1,\dots,5\}$, with the direct edge confidence drawn per (S1) and an
+optional weak paraphrase edge to $A_1$; both classes receive (S2) noise. 120
+cases per $(k,\text{class})$ cell. Three detectors: \textsc{Count}
+(\#contradiction edges with $w\ge 0.5$; the standard baseline), \textsc{Sheaf}
+(the unified energy of \S\ref{sec:logic-gate}, assertion-aware, no
+thresholding), \textsc{Sat} (DPLL on edges with $w\ge 0.5$).
+
+\begin{table}[t]
+\centering
+\begin{tabular}{cccccc}
+\toprule
+$k$ & AUROC \textsc{Count} & AUROC \textsc{Sheaf} & AUROC \textsc{Sat} &
+Loc.\ \textsc{Count} & Loc.\ \textsc{Sheaf}\\
+\midrule
+1 & 0.881 & 1.000 & 1.000 & 100.0\% & 100.0\%\\
+2 & 0.875 & 1.000 & 1.000 & 100.0\% & 100.0\%\\
+3 & 0.831 & 1.000 & 0.933 & 86.7\% & 100.0\%\\
+4 & 0.537 & 0.993 & 0.554 & 10.8\% & 97.5\%\\
+5 & 0.504 & 0.970 & 0.500 & 0.0\% & 83.3\%\\
+\bottomrule
+\end{tabular}
+\caption{Mechanism simulation: detection AUROC and top-1 localization rate
+versus violation distance $k$ ($n=120$ per cell), \emph{under simulated
+confidences drawn from (S1)/(S2)}. Threshold-based methods collapse to chance
+as the direct-edge confidence crosses the threshold; the weighted sheaf energy
+degrades gracefully and retains localization.}
+\label{tab:simulation}
+\end{table}
+
+The simulation establishes a conditional statement: \emph{if} real NLI
+confidences decay with distance (S1) and produce hedged-claim false positives
+(S2), \emph{then} the sheaf energy separates structurally from counting
+(Table~\ref{tab:simulation}). Both assumptions are directly testable, and the
+harness becomes the real experiment by replacing simulated confidences with
+model outputs. That experiment follows.
+
+\subsection{Pre-registered field study}
+\label{sec:field}
+
+\paragraph{Design (protocol frozen before data collection; deviations
+logged).} Instrument: DeBERTa-large-MNLI, temperature-scaled on MNLI
+validation-matched ($n=2{,}000$; $T=1.452$; 15-bin ECE $0.011$ post- vs.\
+$0.047$ pre-calibration; MNLI accuracy $0.917$); the instrument never receives
+injection locations. Corpus: 450 GSM8K gold solutions parsed into 4--10-step
+claim chains, with the dataset's native calculator annotations as the numeric
+extraction channel. Paired clean/violated design, $n=150$ cases per cell (45
+for per-channel threshold calibration, 105 for evaluation); 22{,}706 scored
+sentence pairs. Violation families: \textbf{V1/V2}, template negation of the
+step $k\in\{1,\dots,5\}$ positions before the end, appended at the end;
+\textbf{V3}, a compositional numeric violation---a closing sentence misstates
+the ratio between final and initial computed quantities while every sentence
+\emph{pair} remains individually consistent (pairwise detectors blind by
+construction); \textbf{V4}, hedged contamination attached as a non-asserted
+vertex in both classes. Arms: \textsc{Count}, \textsc{Wsum} (de-thresholded
+weighted sum---the control that prevents attributing a sheaf win to mere
+de-thresholding), \textsc{NliMax}, \textsc{Sat}, and the max-form sheaf energy
+of Def.~\ref{def:maxform}. Primary endpoints: paired-bootstrap
+$\Delta$AUROC against the best baseline per cell with Holm correction across
+cells; top-1 localization. Pre-registered success criteria: $\Delta$AUROC
+$\ge 0.03$ (CI excluding 0) or localization advantage $\ge 0.10$, plus a
+\textsc{Wsum}-specific win on V3 or V4.
+
+\paragraph{Assumption adjudication (E0).} Both simulation assumptions
+\emph{fail} in the field, in informative ways. (S1): calibrated contradiction
+confidence on the direct pair $(\neg c_i,c_i)$ is \emph{flat} in $k$
+($0.749,0.740,0.742,0.764,0.756$ for $k=1,\dots,5$)---a modern NLI recognizes
+a verbatim negation regardless of its position; cross-pair confidence sits
+near $0.5$ with a mild downward drift. (S2): hedged constructions were flagged
+in $0/300$ trials (Clopper--Pearson 95\%: $[0,0.012]$). Consequently the
+collapse mechanism of Table~\ref{tab:simulation} is not exercised by verbatim
+negations, and hedged reconciliation has nothing to discount under this
+instrument.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccccc c}
+\toprule
+Cell & \textsc{Sheaf}$_{\max}$ & \textsc{Sheaf}$_{\mathrm{quad}}$ &
+\textsc{Count} & \textsc{Wsum} & \textsc{NliMax} & \textsc{Sat} &
+Loc.\ S/B\\
+\midrule
+V1 $k{=}1$ & 0.719 & 0.719 & 0.696 & 0.719 & 0.531 & 0.514 & 0.21 / 0.94\\
+V2 $k{=}2$ & 0.741 & 0.741 & 0.710 & 0.741 & 0.520 & 0.505 & 0.17 / 0.91\\
+V2 $k{=}3$ & 0.756 & 0.756 & 0.734 & 0.756 & 0.513 & 0.505 & 0.06 / 0.94\\
+V2 $k{=}4$ & 0.717 & 0.717 & 0.685 & 0.717 & 0.503 & 0.500 & 0.03 / 0.90\\
+V2 $k{=}5$ & 0.739 & 0.739 & 0.701 & 0.739 & 0.502 & 0.500 & 0.02 / 0.92\\
+\textbf{V3} & \textbf{0.990} & 0.586 & 0.498 & 0.501 & 0.500 & 0.500 &
+\textbf{0.24 / 0.00}\\
+V4 $k{=}1$ & 0.751 & 0.751 & 0.696 & 0.732 & 0.518 & 0.510 & 0.14 / 0.91\\
+\bottomrule
+\end{tabular}
+\caption{Field study (confirmatory run; $n=105$ evaluation cases per cell).
+AUROC per arm; Loc.\ S/B is top-1 localization for the sheaf hotspot vs.\ the
+baseline above-threshold rule. On V3 the sheaf--best-baseline gap is
+$\Delta=+0.489$ [95\% CI $0.470,0.503$], Holm-adjusted $p=0.0018$, with
+FPR at 95\% TPR of $1.0\%$ (vs.\ $94.3\%$ for every pairwise baseline); the
+\textsc{Wsum} anti-artifact clause holds. V1/V2 equalities are exact
+(Prop.~\ref{prop:struct-equiv}).}
+\label{tab:field}
+\end{table}
+
+\paragraph{Findings (Table~\ref{tab:field}).} Three results delimit the
+tool's value precisely.
+
+\emph{(i) The structural regime: confirmed at $0.990$.} On compositional
+violations (V3), every pairwise arm is at chance by construction---no sentence
+pair witnesses the inconsistency---while the max-form sheaf energy detects the
+broken cycle holonomy at AUROC $0.990$ with $1\%$ FPR at $95\%$ TPR, and is
+the only method with nonzero localization ($0.24$ vs.\ exactly $0$). The
+pre-registered criteria are met with the \textsc{Wsum} clause, so the
+separation is not a de-thresholding artifact.
+
+\emph{(ii) The structure-free regime: provable coincidence.} On V1/V2, the
+sheaf and \textsc{Wsum} columns agree to three decimals in every cell---an
+instance of Prop.~\ref{prop:struct-equiv}, not an empirical accident. Field
+NLI noise (spurious contradiction edges between ordinary solution steps) caps
+all pairwise methods at ${\approx}0.72$--$0.76$ and drives \textsc{Sat} to
+chance; sheaf top-1 localization loses to the simple above-threshold rule
+outside V3 for the same reason. The localization claim is therefore scoped to
+compositional violations.
+
+\emph{(iii) The aggregation form is forced.} The as-specified quadrature
+combination of the two $f_3$ channels scores $0.586$ on V3; the max-form of
+Def.~\ref{def:maxform} scores $0.990$ from the same channel values. The
+dilution phenomenon of Prop.~\ref{prop:dilution} recurs inside $f_3$, and its
+P3 remedy applies one level down.
+
+\subsection{Field test of the calibration layer}
+\label{sec:field-e2}
+
+On clean-chain sheaf scores (pool $n=735$; $n_{\mathrm{cal}}=200$,
+$\alpha=0.10$, $R=1{,}000$ random splits), pooled exceedance is
+$0.0952\le\alpha$ (exact binomial $p=1.0$ against inflation): the
+finite-sample bound of Theorem~\ref{thm:split} holds in the field. The
+coverage-distribution refinement $\mathrm{Beta}(m,n+1-m)$ is rejected by a KS
+test ($p\approx 0$) because $39.7\%$ of scores are tied---its continuity
+assumption fails for discrete score atoms; the tie-safe bound is the correct
+field statement.
+
+\paragraph{Scope of the claim.} Violations are template-inserted into real
+chains (the pre-registered method); replication with an architecture-distinct
+second instrument and an organically generated error corpus is registered as
+the immediate next step. All code, the frozen protocol with its deviation log,
+and per-run artifacts are released with the paper.

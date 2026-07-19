@@ -1,0 +1,33 @@
+\section{Output Representation}
+\label{sec:representation}
+
+Fix a deterministic encoder $E:\Sigma^*\to\Rd$ applied at unit level: an
+output $y$ is segmented by a fixed procedure $D$ into units (sentences or
+atomic claims) $u_1,\dots,u_m$.
+
+\begin{definition}[Output measure]
+$\hat\mu_y=\frac1m\sum_{j=1}^m \delta_{E(u_j)}\in\PM$.
+\end{definition}
+
+\begin{assumption}[A1]
+$\|E(u)\|\le R$ for all units (normalized embeddings: $R=1$).
+\end{assumption}
+
+\begin{assumption}[A2]
+All kernels are bounded ($\sup_x k(x,x)\le K$), measurable, and characteristic
+on the relevant domain.
+\end{assumption}
+
+\begin{assumption}[A3]
+Calibration and test outputs are exchangeable as raw texts. Used only where
+stated; \S\ref{sec:regime3} removes it.
+\end{assumption}
+
+A \emph{gate} is a pair $(f_i,\tau_i)$ with measurable
+$f_i:\Sigma^*\to[0,\infty)$ and threshold $\tau_i>0$; write
+$\rho_i(y)=f_i(y)/\tau_i$, and gate $i$ passes iff $\rho_i(y)\le 1$. The
+\emph{instrument} $I=(D,\mathrm{NLI},E,\text{graph builder})$ is fixed before
+calibration and treated as part of each $f_i$; this matters for
+Prop.~\ref{prop:composite}. No manifold, bundle, or Fisher-metric structure is
+assumed; everything downstream lives on $(\Rd,\|\cdot\|)$ and on finite
+graphs.

@@ -26,6 +26,21 @@ revisions are:
 - **Appendix A**: v1 empirical audit paragraph (Study A results) added; EVT
   row updated.
 
+**Transcription verification (2026-07-19).** 14 load-bearing formulas in
+§3–§5 (Thm 4.2 bounds, order-statistic threshold, Thm 4.3 α/5, Thm 4.4 ACI
+bound, Prop 4.6 product, Thm 5.2 partition sets, Dec veto case, Prop 5.7
+margin condition, Prop 5.9 one-sided chain, Prop 3.1 Lipschitz bound,
+Prop 3.4 MMD bound, f₂ min-form, margin definition) were mechanically
+compared against the v3.1 PDF text extraction: all identical.
+
+**Theorem numbering map (v3.1 → v3.2).** New §3.3 insertions shift the shared
+counter: v3.1 Prop 3.1 → 3.1 (unchanged); Prop 3.2 (gap) → 3.3;
+Prop 3.3 (no-poly) → 3.4; Prop 3.4 (dilution) → 3.7; Prop 3.5 (unit
+sensitivity) → 3.8. New objects: Def 3.2 (max-form f3), Prop 3.5
+(structural equivalence), Remark 3.6. §4–§5 numbering unchanged. External
+documents citing v3.1 numbers (protocol, strategy docs) refer to the v3.1
+scheme.
+
 Experimental basis: `docs/M1_RESULTS_AND_ANALYSIS.md`,
 `docs/M1_PREREGISTERED_PROTOCOL.md` (deviations D1–D4),
 `docs/EXPERIMENT_LOG.md`.

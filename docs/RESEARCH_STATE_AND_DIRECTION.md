@@ -136,9 +136,17 @@ invariance (weak Lipschitz version only).
   corpus before submission.
 - **P3 (Tarski unification; LICS/JACT):** unchanged, independent.
 
-## 7. Open items requiring the author's decision
+## 7. Open items and decisions taken
 
-1. E3 human annotation (400 items, dual-coded) — budget/recruiting.
-2. arXiv cross-post of v3.1 (strategy Phase 0.2) — timing relative to the
-   revised manuscript incorporating M1 results.
-3. Whether P2 is split out now or after the organic-error corpus.
+1. **E3 human annotation (400 items, dual-coded)** — no annotators available
+   at present. Interim path (clearly labeled non-confirmatory): a pilot
+   machine-audit with a second model as adjudicator to estimate ε_D/ε_NLI
+   ranges; the Prop. 4.6 power certificate remains "pending human audit" in
+   all reporting until the dual-coded audit exists.
+2. **Publication channel: SSRN revision** (author has no arXiv account; the
+   v1 preprint is already on SSRN). SSRN-ready PDF built at
+   `paper/v3_2/SSRN_Semantic_Validation_Gates_v3_2.pdf` (17 pp); upload as a
+   revision of the existing SSRN submission so the DOI/abstract page carries
+   the corrected, field-validated version.
+3. Whether P2 is split out now or after the organic-error corpus — still
+   open.

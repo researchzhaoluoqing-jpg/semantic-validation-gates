@@ -118,8 +118,8 @@ invariance (weak Lipschitz version only).
 
 | Run | Config | Purpose | Status |
 |---|---|---|---|
-| Scale-up A (v8) | GSM8K, 1,000 chains, n = 300/cell, 6 negation + 3 closing templates | tighten CIs; template-family robustness for V3 | **running** |
-| Replication B | second instrument (`FacebookAI/roberta-large-mnli`, architecture-distinct), key cells (V1, V3, V4), n = 300 | instrument-independence of the V3 result | queued next |
+| Scale-up A (v8) | GSM8K, 1,000 chains, n = 300/cell, 6 negation + 3 closing templates | tighten CIs; template-family robustness for V3 | **complete — V3 0.995, all findings reproduce** |
+| Replication B | second instrument (`FacebookAI/roberta-large-mnli`, architecture-distinct), key cells (V1, V3, V4), n = 300 | instrument-independence of the V3 result | **complete — V3 0.999, GREEN replicated; V4 activates under S2=2.3% (dose–response with Scale-up's S2=0.7% → +0.015)** |
 | Organic-error corpus | model-generated GSM8K solutions; execution-labeled compositional errors | replace template insertion for the P2 headline | design |
 | MATH extension | requires an equation extractor (no `<<>>` annotations in MATH) | corpus generality | after extractor audit |
 | E3 instrument audit | ε_D / ε_NLI, n = 400 dual human annotation | activates Prop. 4.6 power certificate | **needs human annotators — user decision** |

@@ -69,7 +69,7 @@ frozen GREEN/YELLOW/RED decision rules.
 | **v7** | 2026-07-19 | **confirmatory**: 450 chains, 150/cell (45 cal + 105 eval), 4000 bootstrap, 22.7k NLI pairs | COMPLETE | **VERDICT: GREEN** — V3: SHEAF_MAX AUROC 0.990 vs chance baselines, Δ=+0.489 [0.470, 0.503], Holm p=0.0018, FPR@95TPR 1% vs 94%, localization 0.24 vs 0.00; V1/V2: SHEAF ≡ WSUM (structural equivalence on assertion-only chains); V4: +0.019 (S2 vacuous); E2: Thm 4.2 bound holds (0.0952 ≤ 0.10), Beta law rejected via ties (39.7%) |
 
 | Repl B v1 | 2026-07-19 | **replication**, second instrument: RoBERTa-large-MNLI (T=1.337, ECE 0.012), 600 chains, cells V1/V3/V4, n=150/cell | COMPLETE | **GREEN replicated** — V3: 0.999 AUROC (FPR@95TPR 0.5%), Δ=+0.489 [0.479, 0.498], Holm p=0.0008, loc 0.33/0.00; quadrature dilution (0.593) and V1 structural equivalence replicate; **V4 activates (+0.035 ≥ 0.03) under this instrument's nonzero S2 = 2.3% [0.9, 4.8]** — instrument-conditional capability confirmed; E2 bound holds (0.0995 ≤ 0.10, ties 6.7%) |
-| Scale A v8 | 2026-07-19 | scale-up: 1000 chains, n=300/cell, 6 negation + 3 closing templates | running | — |
+| Scale A v8 | 2026-07-19 | scale-up: 1000 chains, n=300/cell (210 eval), 6 negation + 3 closing templates, 46.9k pairs | COMPLETE | **GREEN again** — V3: 0.995, Δ=+0.488 [0.474, 0.498], FPR@95TPR 0.5%, loc 0.30/0.00, robust to template families; V1/V2 equivalence and quadrature dilution (0.576) reproduce; DeBERTa S2 = 0.67% [0.08, 2.39] at larger sample → V4 +0.015 — with RoBERTa's S2=2.3% → +0.035 forms a **dose–response pattern**; E2 holds third time (0.0996 ≤ 0.10, pool 1470) |
 
 Full analysis: `docs/M1_RESULTS_AND_ANALYSIS.md`. Artifacts:
 `experiments/results/m1_full_v7/`, `experiments/results/m1_repl_B/`.

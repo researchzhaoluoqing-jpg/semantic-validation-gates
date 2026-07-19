@@ -176,6 +176,15 @@ test ($p\approx 0$) because $39.7\%$ of scores are tied---its continuity
 assumption fails for discrete score atoms; the tie-safe bound is the correct
 field statement.
 
+\paragraph{Scale-up.} A doubled-scale run ($1{,}000$ chains, $n=210$
+evaluation cases per cell, six negation and three closing-sentence template
+families, $46{,}936$ scored pairs) reproduces every finding: V3 at AUROC
+$0.995$ ($\Delta=+0.488$ [$0.474,0.498$], FPR at 95\% TPR $0.5\%$,
+localization $0.30$ vs.\ $0.00$), exact V1/V2 counting-coincidence, quadrature
+dilution ($0.576$), and the Regime-I bound ($0.0996\le 0.10$, pool
+$n=1{,}470$). The headline is therefore stable across sample size and
+template families.
+
 \paragraph{Replication with a second instrument.} The key cells were
 replicated with an architecture-distinct instrument
 (RoBERTa-large-MNLI, $T=1.337$, ECE $0.012$; 600 chains; $n=150$/cell). The
@@ -191,8 +200,10 @@ assertion-aware reconciliation capability activates: on V4 the sheaf beats
 \textsc{Wsum} by $+0.035$ ($\ge$ the pre-registered $0.03$ bar) where under
 the zero-S2 instrument it was vacuous. The V4 capability is thus an
 \emph{instrument-conditional} one, switched on precisely when
-$\mathrm{S2}>0$---a falsifiable dependence the two instruments jointly
-demonstrate.
+$\mathrm{S2}>0$---a falsifiable dependence the instruments jointly
+demonstrate as a dose--response pattern: $\mathrm{S2}=0.7\%$ (DeBERTa,
+scale-up) yields $+0.015$ over \textsc{Wsum}, $\mathrm{S2}=2.3\%$ (RoBERTa)
+yields $+0.035$.
 
 \paragraph{Scope of the claim.} Violations are template-inserted into real
 chains (the pre-registered method); an organically generated error corpus is

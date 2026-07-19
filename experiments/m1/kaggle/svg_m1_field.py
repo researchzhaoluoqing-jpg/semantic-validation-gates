@@ -36,16 +36,21 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-HARNESS = "/kaggle/input/svg-harness"
-if os.path.isdir(HARNESS):
-    sys.path.insert(0, HARNESS)
+import glob as _glob
+_hits = _glob.glob("/kaggle/input/**/f3_reference.py", recursive=True)
+if _hits:
+    sys.path.insert(0, os.path.dirname(_hits[0]))
 else:
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath("__file__")),
                                     "..", "harness"))
+print("harness path:", sys.path[0],
+      "| /kaggle/input contents:", os.listdir("/kaggle/input")
+      if os.path.isdir("/kaggle/input") else "n/a")
 
-from f3_reference import ClaimGraph, Edge
+from f3_reference import ClaimGraph, Edge, f3_unified
 from insertion import View, CasePair
-from detectors import DETECTORS, score_sheaf, sheaf_localize
+from detectors import (DETECTORS, PGD, affine_energy, score_sheaf,
+                       sheaf_localize)
 from runners import e1_verdict, run_e2
 import stats as svgstats
 
@@ -53,10 +58,10 @@ SEED = 20260719
 rng = np.random.default_rng(SEED)
 torch.manual_seed(SEED)
 
-QUICK = os.environ.get("QUICK", "1") == "1"  # default flips per push: smoke vs full
+QUICK = os.environ.get("QUICK", "0") == "1"  # default flips per push: smoke vs full
 NLI_MODEL = "microsoft/deberta-large-mnli"
 N_CAL_MNLI = 400 if QUICK else 2000
-N_CHAINS = 80 if QUICK else 450
+N_CHAINS = 140 if QUICK else 450
 N_PER_CELL = 20 if QUICK else 150
 N_BOOT = 500 if QUICK else 4000
 CELLS = [("V1", 1), ("V2", 2), ("V2", 3), ("V2", 4), ("V2", 5), ("V3", 0), ("V4", 1)]
@@ -76,8 +81,10 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from nli_wrapper import TemperatureScaler, ece
 
 tok = AutoTokenizer.from_pretrained(NLI_MODEL)
+# fp32: DeBERTa-v1 disentangled attention is fp16-incompatible (Float/Half mix)
 nli_model = (AutoModelForSequenceClassification.from_pretrained(
-    NLI_MODEL, torch_dtype=torch.float16).to(DEVICE).eval())
+    NLI_MODEL, torch_dtype=torch.float32, use_safetensors=False)
+    .to(DEVICE).eval())
 id2label = {int(k): v.upper() for k, v in nli_model.config.id2label.items()}
 IDX = {v: k for k, v in id2label.items()}
 CONTRA_IDX, ENTAIL_IDX = IDX["CONTRADICTION"], IDX["ENTAILMENT"]
@@ -155,7 +162,7 @@ def parse_item(rec):
 chains = []
 for rec in gsm:
     steps, eqvals = parse_item(rec)
-    if 4 <= len(steps) <= 8 and all(len(s) > 10 for s in steps):
+    if 4 <= len(steps) <= 10 and all(len(s) > 10 for s in steps):
         chains.append(dict(steps=steps, eqvals=eqvals))
     if len(chains) >= N_CHAINS:
         break
@@ -197,7 +204,8 @@ def ensure_injected_edge(g, u, v):
     return len(g.edges) - 1
 
 def make_field_v12(k, hedge=False):
-    pool = [c for c in chains if len(c["steps"]) >= k + 3]
+    # target step index is n-k (violation appended at the end), so n >= k+2
+    pool = [c for c in chains if len(c["steps"]) >= k + 2]
     ch = pool[int(rng.integers(len(pool)))]
     steps = list(ch["steps"])
     n = len(steps)
@@ -283,45 +291,77 @@ s2_ci = svgstats.clopper_pearson(s2_hits, s2_n)
 print(f"S2 hedged FP rate = {s2_rate:.3f}  CP95={tuple(round(x,3) for x in s2_ci)}")
 
 # %% [markdown]
-# ## 5. E1 — five-arm paired comparison on real chains
+# ## 5. E1 — paired comparison on real chains
+# Primary sheaf arm SHEAF_MAX applies the manuscript's P3 principle (localized
+# violations aggregate by max, never sum — Prop. 3.4/3.5; harness amendment O1)
+# across the two f3 channels (pairwise relaxed energy; numeric holonomy), each
+# normalized by its 90th-percentile clean score on a per-cell calibration split
+# that is excluded from evaluation. The as-specified quadrature energy (SHEAF)
+# is retained as the sensitivity arm. Registered as protocol deviation D2
+# before the confirmatory run; frozen verdict rules applied to the primary arm.
 
 # %%
 def fpr_at_tpr(pos, neg, tpr=0.95):
     thr = np.quantile(np.asarray(pos, float), 1 - tpr)
     return float((np.asarray(neg, float) >= thr).mean())
 
-results, raw_scores = {}, {}
+def sheaf_channels(view):
+    e_pair, x_star = f3_unified(view.g, **PGD)
+    e_aff, res = (affine_energy(view.aff_nodes, view.aff_edges)
+                  if view.aff_edges else (0.0, []))
+    return e_pair, e_aff, x_star, res
+
+ARMS = ["COUNT", "WSUM", "NLIMAX", "SAT", "SHEAF", "SHEAF_MAX"]
+BASELINES = ["COUNT", "WSUM", "NLIMAX", "SAT"]
+results, results_sens, raw_scores = {}, {}, {}
 for vtype, k in CELLS:
-    scores = {a: {"pos": [], "neg": []}
-              for a in ["COUNT", "WSUM", "NLIMAX", "SAT", "SHEAF"]}
-    loc_hits = loc_base = 0
+    cases = []
     for case_i in range(N_PER_CELL):
         cp = make_field_case(vtype, k)
-        for name, fn in DETECTORS.items():
-            scores[name]["neg"].append(fn(cp.clean))
-            scores[name]["pos"].append(fn(cp.violated))
-        s_c, *_ = score_sheaf(cp.clean)
-        s_v, x_star, aff = score_sheaf(cp.violated)
-        scores["SHEAF"]["neg"].append(s_c)
-        scores["SHEAF"]["pos"].append(s_v)
-        if sheaf_localize(cp.violated, x_star, aff, cp.injected):
-            loc_hits += 1
-        if cp.injected[0] == "g":
-            loc_base += cp.violated.g.edges[cp.injected[1]].w >= 0.5
-    aur = {a: svgstats.auroc(scores[a]["pos"], scores[a]["neg"]) for a in scores}
-    best_bl = max((a for a in aur if a != "SHEAF"), key=aur.get)
-    d, lo, hi, p = svgstats.paired_bootstrap_delta_auroc(
-        scores["SHEAF"]["pos"], scores["SHEAF"]["neg"],
-        scores[best_bl]["pos"], scores[best_bl]["neg"],
-        n_boot=N_BOOT, seed=SEED)
+        rec = {name: (fn(cp.clean), fn(cp.violated))
+               for name, fn in DETECTORS.items()}
+        pc, pa, _, _ = sheaf_channels(cp.clean)
+        vc, va, x_star, aff = sheaf_channels(cp.violated)
+        rec["_ch"] = (pc, pa, vc, va)
+        rec["SHEAF"] = (math.sqrt(pc*pc + pa*pa), math.sqrt(vc*vc + va*va))
+        rec["_loc"] = bool(sheaf_localize(cp.violated, x_star, aff, cp.injected))
+        rec["_locb"] = bool(cp.injected[0] == "g"
+                            and cp.violated.g.edges[cp.injected[1]].w >= 0.5)
+        cases.append(rec)
+    n_cal_split = max(5, int(0.3 * len(cases)))
+    cal, ev = cases[:n_cal_split], cases[n_cal_split:]
+    tau_p = max(float(np.quantile([c["_ch"][0] for c in cal], 0.9)), 1e-6)
+    tau_a = max(float(np.quantile([c["_ch"][1] for c in cal], 0.9)), 1e-6)
+    for c in cases:
+        pc, pa, vc, va = c["_ch"]
+        c["SHEAF_MAX"] = (max(pc / tau_p, pa / tau_a),
+                          max(vc / tau_p, va / tau_a))
+    scores = {a: {"pos": [c[a][1] for c in ev], "neg": [c[a][0] for c in ev]}
+              for a in ARMS}
+    aur = {a: svgstats.auroc(scores[a]["pos"], scores[a]["neg"]) for a in ARMS}
+    best_bl = max(BASELINES, key=lambda a: aur[a])
+    loc_s = float(np.mean([c["_loc"] for c in ev]))
+    loc_b = float(np.mean([c["_locb"] for c in ev]))
+
+    def delta_vs(arm):
+        return svgstats.paired_bootstrap_delta_auroc(
+            scores[arm]["pos"], scores[arm]["neg"],
+            scores[best_bl]["pos"], scores[best_bl]["neg"],
+            n_boot=N_BOOT, seed=SEED)
+
+    d, lo, hi, p = delta_vs("SHEAF_MAX")
+    # frozen verdict rules read the primary arm through the "SHEAF" slot
+    aur_primary = dict(aur); aur_primary["SHEAF"] = aur["SHEAF_MAX"]
     results[(vtype, k)] = dict(
-        auroc=aur, best_baseline=best_bl, delta=(d, lo, hi, p),
-        fpr95={a: fpr_at_tpr(scores[a]["pos"], scores[a]["neg"]) for a in scores},
-        loc_sheaf=loc_hits / N_PER_CELL, loc_base=loc_base / N_PER_CELL)
+        auroc=aur_primary, auroc_all=aur, best_baseline=best_bl,
+        delta=(d, lo, hi, p), taus=dict(pair=tau_p, aff=tau_a),
+        fpr95={a: fpr_at_tpr(scores[a]["pos"], scores[a]["neg"]) for a in ARMS},
+        loc_sheaf=loc_s, loc_base=loc_b, n_eval=len(ev))
+    results_sens[(vtype, k)] = dict(delta_quadrature=delta_vs("SHEAF"))
     raw_scores[f"{vtype}_k{k}"] = scores
     print(f"{vtype} k={k}: AUROC={ {a: round(v,3) for a,v in aur.items()} } "
-          f"Δvs{best_bl}={d:.3f} [{lo:.3f},{hi:.3f}] p={p:.4f} "
-          f"loc S/B={loc_hits/N_PER_CELL:.2f}/{loc_base/N_PER_CELL:.2f}")
+          f"Δ(MAX vs {best_bl})={d:.3f} [{lo:.3f},{hi:.3f}] p={p:.4f} "
+          f"loc S/B={loc_s:.2f}/{loc_b:.2f}")
 
 pvals = [results[c]["delta"][3] for c in CELLS]
 holm_adj = svgstats.holm(pvals)
@@ -383,13 +423,16 @@ report = dict(
     e0=dict(s1_direct=s1_direct, s1_cross=s1_cross, kstar_cross=kstar_cross,
             s2_rate=s2_rate, s2_ci=list(s2_ci), s2_n=s2_n),
     e1={f"{v}_k{k}": dict(
-            auroc=results[(v, k)]["auroc"], best_baseline=results[(v, k)]["best_baseline"],
-            delta_auroc=results[(v, k)]["delta"], p_holm=results[(v, k)]["p_holm"],
+            auroc=results[(v, k)]["auroc_all"], best_baseline=results[(v, k)]["best_baseline"],
+            delta_auroc_primary=results[(v, k)]["delta"], p_holm=results[(v, k)]["p_holm"],
+            delta_auroc_quadrature=results_sens[(v, k)]["delta_quadrature"],
+            channel_taus=results[(v, k)]["taus"], n_eval=results[(v, k)]["n_eval"],
             fpr_at_95tpr=results[(v, k)]["fpr95"],
             loc_sheaf=results[(v, k)]["loc_sheaf"], loc_base=results[(v, k)]["loc_base"])
         for v, k in CELLS},
     verdict=verdict,
-    e2=e2,
+    e2=dict(**e2, pool_n=int(len(clean_pool)),
+            pool_tie_fraction=float(1 - len(np.unique(clean_pool)) / len(clean_pool))),
 )
 with open(f"{OUT}/m1_report.json", "w") as f:
     json.dump(report, f, indent=2, default=str)

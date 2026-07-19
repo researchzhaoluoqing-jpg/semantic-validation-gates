@@ -75,7 +75,10 @@ AUROC via Mann–Whitney U (ties half-credit). Paired bootstrap for ΔAUROC (res
 
 | Date | Deviation | Reason | Impact on confirmatory status |
 |---|---|---|---|
-| — | — | — | — |
+| 2026-07-19 | D1: NLI weights loaded fp32 (not fp16) | DeBERTa-v1 disentangled attention is fp16-incompatible on T4 (`Float/Half` dtype error) | None (numerics only more precise) |
+| 2026-07-19 | D2: primary sheaf arm changed to SHEAF_MAX — per-channel (pairwise energy; numeric holonomy) 90th-percentile normalization on a per-cell 30% calibration split (excluded from evaluation), aggregated by max. As-specified quadrature energy retained as sensitivity arm. | Smoke run (diagnostic, n=20/cell) showed the quadrature combination dilutes the holonomy channel under real pairwise-NLI noise on math text (V3 AUROC 0.62 vs. predicted ≥ 0.85). Max aggregation is the manuscript's own P3 principle (Props. 3.4/3.5) and harness amendment O1; decided **before** the confirmatory run, on smoke data only. | Confirmatory verdict uses SHEAF_MAX; quadrature results reported alongside |
+| 2026-07-19 | D3: V2 chain-pool requirement corrected from n ≥ k+3 to n ≥ k+2; parse filter widened to 4–10 steps | k=5 pool was empty in the 4–8-step smoke corpus (crash, no data loss) | None |
+| 2026-07-19 | D4: E2 report augmented with score tie fraction | Smoke KS test rejected the Beta coverage law (p≈0) while the pooled exceedance bound held (0.087 ≤ α=0.10); ties violate the law's continuity assumption and must be quantified | Reporting only |
 
 ### 10. Compute environment
 

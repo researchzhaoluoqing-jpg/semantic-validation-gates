@@ -6,6 +6,22 @@ builds, which still carried internal version markers on the cover.
 
 ---
 
+## 0. Decisions taken (2026-07-22)
+
+- **No correspondence with SSRN.** No appeal, no query about the rejection
+  reason. SSRN does not reconsider and does not explain; the email drafted in
+  `SUBMISSION_CORRESPONDENCE.md` will not be sent.
+- **Reapply as a new submission** with the revised manuscript
+  (`paper/v3_2/SVG_submission.pdf`).
+- **Working assumption on the rejection cause:** the missing reference list.
+  This is the most likely single trigger — SSRN's published not-accepted list
+  names "non-scholarly articles… particularly those lacking references", the
+  letter cited *submission type*, and v1 had zero citations. It remains an
+  inference: the letter is a template and SSRN gives no individualized reason.
+  The second named ground that cannot be excluded is **undisclosed AI use**;
+  both are addressed in the revised manuscript (31 references; AI declaration
+  on the PDF), so the resubmission does not depend on which one was decisive.
+
 ## 1. It is a NEW submission, not a revision
 
 The v1 manuscript (Abstract ID 7031058) was **declined at screening**, so

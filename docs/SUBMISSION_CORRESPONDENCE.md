@@ -1,5 +1,11 @@
 # Submission correspondence — drafts
 
+> **DECISION (2026-07-22): no email will be sent.** SSRN states it does not
+> reconsider rejections and gives no individualized reasons, so correspondence
+> has no expected return. The route is a **new submission** of the revised
+> manuscript. The drafts below are retained only as a record of the option
+> that was considered and declined — do not send them.
+
 Context: the v1 manuscript (*Semantic Validation Gates: A Formal Axiomatic
 Framework for Semantic Verification*, SSRN Abstract ID 7031058) was declined
 at screening. SSRN states it does not reconsider rejections and gives no

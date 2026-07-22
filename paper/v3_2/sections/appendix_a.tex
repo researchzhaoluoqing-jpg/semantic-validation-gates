@@ -1,10 +1,11 @@
 % !TeX root = ../main.tex
-\section{Correction Table: v1 $\to$ v3}
+\section{Correction Table: Withdrawn Constructions from the Earlier Draft}
 \label{app:correction}
 
-The v1 preprint wrapped the five-gate architecture in differential-geometric
-constructions that were not well-posed. The table records each defect and its
-replacement. v3.2 adds an empirical footing: the v1 operator set was
+The earlier draft (v1) wrapped the five-gate architecture in
+differential-geometric constructions that were not well-posed. The table
+records each defect and its replacement. The present version adds an
+empirical footing: the v1 operator set was
 instantiated faithfully (Wasserstein distances to reference measures,
 EVT/Fr\'echet thresholds, lexicographic $\Pi$) and audited on GSM8K and
 TruthfulQA outputs of an instruction-tuned generator ($N=300$). It detected
@@ -20,7 +21,7 @@ the released code.
 \small
 \begin{tabular}{p{0.28\linewidth}p{0.33\linewidth}p{0.30\linewidth}}
 \toprule
-\textbf{v1 construct} & \textbf{Defect} & \textbf{v3 replacement}\\
+\textbf{Earlier construct} & \textbf{Defect} & \textbf{Present replacement}\\
 \midrule
 Riemannian ``semantic space'' with Fisher metric &
 Fisher metric requires a parametric family; the space was never constructed &
@@ -65,5 +66,6 @@ Parallel evaluation, safety veto, $\Pi$ demoted to repair routing
 (\S\ref{sec:veto})\\
 \bottomrule
 \end{tabular}
-\caption{v1 $\to$ v3 correction table.}
+\caption{Correction table: constructions withdrawn from the earlier draft and
+their replacements in the present version.}
 \end{table}

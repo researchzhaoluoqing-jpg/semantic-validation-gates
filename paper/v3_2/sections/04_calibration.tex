@@ -26,7 +26,7 @@ and test exchangeably. What instrument error does affect is detection power
 
 With a calibration set of $n_i$ outputs certified valid on dimension $i$, set
 $\tau_i$ to the $\lceil(n_i+1)(1-\alpha_i)\rceil$-th smallest calibration
-score.
+score; see \cite{angelopoulos2023} for the construction in general form.
 
 \begin{theorem}[Distribution-free false-rejection control]
 \label{thm:split}
@@ -42,8 +42,8 @@ event of probability at most $\alpha_i$; the lower bound follows from the same
 rank computation without ties.
 \end{proof}
 
-This is precisely the property v1's ``EVT conjecture'' asked for, obtained as
-a three-line finite-sample theorem with no distributional assumptions.
+Distribution-free false-rejection control thus arrives as a three-line
+finite-sample theorem, with no distributional assumptions.
 (Extreme-value refinements remain optional; note that all gate scores here are
 bounded, placing them in the Weibull, not Fr\'echet, max-domain of attraction
 \cite{coles2001}---any EVT use must carry domain diagnostics.) The

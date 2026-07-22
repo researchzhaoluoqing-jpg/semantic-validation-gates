@@ -64,8 +64,10 @@ either.
 \begin{remark}[$\Pi$ is not a security boundary]
 Consider an adversary who deliberately plants a mild fact violation so that
 $f_2$ ``fails first.'' Against a sequential, short-circuiting evaluator this
-attack masks a co-occurring alignment violation---it is valid against the v1
-semantics. Under the present architecture it accomplishes nothing: all five
+attack masks a co-occurring alignment violation---it is valid against any
+sequential, short-circuiting semantics, including the lexicographic-only
+design this architecture replaces. Under the present architecture it
+accomplishes nothing: all five
 scores are computed unconditionally, $K(y)$ records both failures, $f_4$ reads
 the raw text, and $\dec$ blocks on $4\in K(y)$ irrespective of every other
 entry. Mutual exclusivity is a property of the reporting taxonomy $\Pi$ (one
@@ -83,18 +85,19 @@ $\gamma(y)=\min_i|f_i(y)-\tau_i|$, and $\Pi$, $K$, $\dec$ are locally constant
 under score perturbations smaller than $\gamma(y)$.
 \end{proposition}
 
-The condition is empirically checkable via continuous score histograms; this
-replaces the v1 conjecture that invoked a (non-existent) canonical reference
-measure on Wasserstein space and a Hausdorff-dimension bound that is
-meaningless in infinite dimensions.
+The condition is empirically checkable via continuous score histograms. We
+note what it deliberately avoids: stating well-posedness as a
+boundary-regularity condition on the space of measures would require a
+canonical reference measure on Wasserstein space, of which there is none, and
+a Hausdorff-dimension bound, which is meaningless in infinite dimensions.
 
 \paragraph{High dimensions and measure concentration.} The classification
 factors through the five scalar scores: $\dec$ depends on $y$ only via
 $(f_1(y),\dots,f_5(y))\in\mathbb R^5$. High-dimensional geometry of the
 embedding space therefore enters only through the one-dimensional law of each
 score; no claim about the Hausdorff dimension or measure of a boundary in
-$\PM$ is made or needed---the v1 boundary conjecture is not repaired but
-dissolved. The legitimate residue of the concentration concern is empirical:
+$\PM$ is made or needed. The legitimate residue of the concentration concern
+is empirical:
 score laws might concentrate near $\tau_i$, producing many small-margin
 outputs. Two answers. First, the validity guarantees
 (Theorems~\ref{thm:split} and \ref{thm:aci}) hold regardless of
@@ -137,8 +140,9 @@ transport perturbations of an output cannot inflate the soft intent score),
 never for a guarantee.
 \end{proposition}
 
-This replaces the v1 conjecture of global Lipschitz equivalence of $W_2$,
-harmonic, and RKHS norms, which is false as stated.
+A global Lipschitz equivalence of the $W_2$, harmonic, and RKHS norms would be
+convenient but is false as stated; only the one-sided direction above is
+available, and the paper uses no more than that.
 
 \subsection{Computational profile and anytime operation}
 \label{sec:compute}

@@ -76,12 +76,13 @@ model outputs. That experiment follows.
 \label{sec:field}
 
 \paragraph{Design (protocol frozen before data collection; deviations
-logged).} Instrument: DeBERTa-large-MNLI, temperature-scaled on MNLI
+logged).} Instrument: DeBERTa-large \cite{he2021} fine-tuned on MultiNLI
+\cite{williams2018}, temperature-scaled \cite{guo2017} on MNLI
 validation-matched ($n=2{,}000$; $T=1.452$; 15-bin ECE $0.011$ post- vs.\
 $0.047$ pre-calibration; MNLI accuracy $0.917$); the instrument never receives
-injection locations. Corpus: 450 GSM8K gold solutions parsed into 4--10-step
-claim chains, with the dataset's native calculator annotations as the numeric
-extraction channel. Paired clean/violated design, $n=150$ cases per cell (45
+injection locations. Corpus: 450 GSM8K \cite{cobbe2021} gold solutions parsed
+into 4--10-step claim chains, with the dataset's native calculator annotations
+as the numeric extraction channel. Paired clean/violated design, $n=150$ cases per cell (45
 for per-channel threshold calibration, 105 for evaluation); 22{,}706 scored
 sentence pairs. Violation families: \textbf{V1/V2}, template negation of the
 step $k\in\{1,\dots,5\}$ positions before the end, appended at the end;
@@ -191,7 +192,8 @@ template families.
 
 \paragraph{Replication with a second instrument.} The key cells were
 replicated with an architecture-distinct instrument
-(RoBERTa-large-MNLI, $T=1.337$, ECE $0.012$; 600 chains; $n=150$/cell). The
+(RoBERTa-large \cite{liu2019} fine-tuned on MNLI, $T=1.337$, ECE $0.012$;
+600 chains; $n=150$/cell). The
 headline replicates: on V3, the max-form sheaf energy scores AUROC
 $\mathbf{0.999}$ (FPR at 95\% TPR $0.5\%$; localization $0.33$ vs.\ $0.00$)
 against chance-level baselines ($\Delta=+0.489$ [$0.479,0.498$], Holm

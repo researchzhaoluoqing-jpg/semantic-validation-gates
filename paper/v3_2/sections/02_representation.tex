@@ -2,9 +2,10 @@
 \section{Output Representation}
 \label{sec:representation}
 
-Fix a deterministic encoder $E:\Sigma^*\to\Rd$ applied at unit level: an
-output $y$ is segmented by a fixed procedure $D$ into units (sentences or
-atomic claims) $u_1,\dots,u_m$.
+Fix a deterministic encoder $E:\Sigma^*\to\Rd$ applied at unit level (in the
+experiments below, a sentence-embedding model in the sense of
+\cite{reimers2019}): an output $y$ is segmented by a fixed procedure $D$ into
+units (sentences or atomic claims) $u_1,\dots,u_m$.
 
 \begin{definition}[Output measure]
 $\hat\mu_y=\frac1m\sum_{j=1}^m \delta_{E(u_j)}\in\PM$.

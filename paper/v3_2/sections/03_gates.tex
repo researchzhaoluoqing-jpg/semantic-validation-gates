@@ -13,27 +13,29 @@ d_{\mathrm{edit}}(y,L)=\min_{z\in L} d_{\mathrm{Lev}}(y,z).
 For CFGs this is computable exactly by error-correcting Earley/CYK parsing
 \cite{aho1972} in $O(|G|^2|y|^3)$; for regular $L$, by product-automaton
 shortest path in $O(|A||y|)$. The gate is deterministic with zero estimation
-error, and $f_1(y)=0\iff y\in L(G)$. No Wasserstein projection is needed; the
-v1 operator $\mathrm{Proj}_{P_{\mathrm{form}}}$ is replaced by an exact
-combinatorial minimization with a known algorithm.
+error, and $f_1(y)=0\iff y\in L(G)$. No projection onto a set of
+``well-formed'' distributions is needed: an exact combinatorial minimization
+with a known algorithm does the work.
 
 \subsection{Fact gate $f_2$}
 
 Decompose $y$ into claims $c_1,\dots,c_m$; retrieve evidence $E_j$ from a
 verified knowledge base $\mathcal K$; let $s_j$ be the calibrated entailment
-probability from an NLI model (isotonic or Platt calibration on held-out data;
-ECE reported). Per P3,
+probability from an NLI model (isotonic, Platt, or temperature calibration on
+held-out data \cite{guo2017}; ECE reported). Per P3,
 \[
 f_2(y)=1-\min_{1\le j\le m}s_j,
 \]
 with a mandatory \emph{abstention state}: when retrieval confidence for a
 claim falls below a floor, the output is routed to abstention rather than
-scored---an unverifiable claim must not receive a numerical pass. (This
-removes the v1 ambiguity in which kernel-smoothing of a reference measure
-silently interpolated over missing knowledge.) Optionally, against a reference
+scored---an unverifiable claim must not receive a numerical pass. (Kernel
+smoothing of a reference measure would instead interpolate silently over
+missing knowledge, returning a passing score where the knowledge base is
+simply empty.) Optionally, against a reference
 sample from $\mathcal K$ one may use the Sinkhorn divergence
-$S_\varepsilon(\hat\mu_y,\hat\nu_{\mathrm{fact}})$, which metrizes weak
-convergence with dimension-robust sample complexity $O(n^{-1/2})$
+$S_\varepsilon(\hat\mu_y,\hat\nu_{\mathrm{fact}})$ \cite{cuturi2013}, which
+metrizes weak convergence with dimension-robust sample complexity
+$O(n^{-1/2})$
 \cite{genevay2019}; plug-in $W_2$ degrades as $O(n^{-1/d})$ \cite{fournier2015}
 and is therefore not used anywhere in this paper.
 
@@ -56,7 +58,8 @@ finite-dimensional Hodge-type quantity, computable in $O(|V|^3)$ worst case
 and by sparse solvers in practice. Global sections
 $\ker\delta=H^0(G;\mathcal F)$ are exactly the edge-consistent assignments, so
 the score measures the obstruction to gluing the asserted claims into a global
-section---the v1 intuition, now on a specified finite object.
+section---a cohomological reading carried here by a specified finite object
+rather than by analogy.
 
 \begin{proposition}[Lipschitz dependence on NLI confidences]
 \label{prop:lipschitz}
@@ -183,10 +186,11 @@ rate on safe outputs holds as a theorem. \emph{Computational independence}
 factor through $D$, the claim graph, or format parsing; a format-corrupted
 output therefore cannot even computationally block its own safety evaluation.
 Combined with the veto of \S\ref{sec:veto}, the masking channel is closed at
-the dataflow level as well as the decision level. (The v1 formulation---$W_2$
-projection onto a ``compact convex set of safe behaviors''---is dropped: the
-set was never constructed and metric projection in positively curved
-Wasserstein space is not well-posed.)
+the dataflow level as well as the decision level. (A $W_2$ projection onto a
+``compact convex set of safe behaviors'' would be the natural distributional
+analogue, but no construction of such a set is known and metric projection in
+positively curved Wasserstein space is not well-posed; the calibrated
+classifier avoids both difficulties.)
 
 \subsection{Intent gate $f_5$}
 
@@ -226,8 +230,9 @@ reference set, then $f_5^{\mathrm{soft}}\ge\Delta$, independently of $m$.
 
 The kernel mean embedding $\psi(\mu)=\int\phi\,d\mu$ is isometric with respect
 to MMD by construction, and MMD is a metric for characteristic $k$
-\cite{gretton2012}. This replaces the v1 claim of an isometric RKHS embedding
-of the $W_2$ geometry, which is impossible for $d\ge 3$ \cite{andoni2018}.
+\cite{gretton2012}. The isometry asserted here is with respect to MMD, not
+$W_2$: an isometric embedding of the $W_2$ geometry itself into a Hilbert
+space is impossible for $d\ge 3$ \cite{andoni2018}, so no such claim is made.
 Three honesty notes: (i) cross-encoder relevance scores are generally not
 positive semidefinite and may be used as raw scores, not kernels---conformal
 calibration is agnostic to the score's provenance; (ii) the $O(n^{-1/2})$ MMD

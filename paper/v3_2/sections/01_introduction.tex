@@ -17,15 +17,14 @@ computable scores, thresholds carry finite-sample guarantees under explicitly
 graded distributional assumptions, the induced error taxonomy is complete and
 mutually exclusive, and safety violations cannot be masked.
 
-An earlier, unpublished draft of this work (referred to below as v1) proposed
-the same five-gate architecture
-wrapped in differential-geometric language---Wasserstein projections onto
-convex sets, \v{C}ech obstruction classes with Hodge norms, isometric
-embeddings of Wasserstein geometry into Hilbert spaces---that was not
-constructible; Appendix~\ref{app:correction} records each defect and its
-repair, together with a field audit showing that the v1 instantiation is also
-empirically inert. The present version retains the architecture and delivers
-it with objects that exist.
+A recurring temptation in this setting is to state the architecture in
+differential-geometric language---Wasserstein projections onto convex sets of
+admissible distributions, \v{C}ech obstruction classes with Hodge norms,
+isometric embeddings of Wasserstein geometry into Hilbert spaces. We avoid
+that route throughout: each such object is either not constructible or not
+well-posed on the spaces in question, and we say so at the point of use. Every
+gate below is instead built from an object that exists and can be computed
+from a real model output.
 
 \subsection{Contributions}
 
@@ -89,6 +88,7 @@ conformal factuality under covariate shift via online density-ratio estimation
 calibrates a five-dimensional gate vector jointly with family-wise control and
 a veto-aware fixed-sequence procedure. \emph{Guardrail pipelines:} production
 frameworks (Guardrails AI, NeMo Guardrails \cite{rebedea2023}, and similar)
+and safety classifiers deployed as input--output filters \cite{inan2023}
 stack validators covering roughly our five dimensions but provide no
 statistical guarantees, no unified severity measure, and no masking analysis;
 this paper can be read as the theory layer for that architecture.

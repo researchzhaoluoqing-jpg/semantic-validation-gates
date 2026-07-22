@@ -57,20 +57,68 @@ of which were cited. `barber2021` additionally strengthens §8.2: exact
 conditional coverage is not merely "not yet done" but provably unattainable
 distribution-free, which is why the Mondrian relaxation is the right target.
 
-## Pre-existing entries spot-checked
+## Full independent audit of the 20 pre-existing entries
 
-| Key | Result |
-|---|---|
-| `cofact2026` | Real (ICLR 2026, OpenReview `eiBp7rsc3K`); authors were missing → added |
-| `huntsman2024` | Real; arXiv:2401.16713 confirmed correct |
-| `ghrist2022` | Real; *Homology Homotopy Appl.* 24(1):325–345, 2022 confirmed; volume/pages added |
+All twenty carried-over entries were checked against a primary or
+authoritative source. **31 of 31 references in the bibliography are real
+publications.** Two substantive defects and several incomplete fields were
+found and corrected.
 
-Remaining pre-existing entries (Aho & Peterson 1972, Andoni–Naor–Neiman 2018,
-Cherian et al. 2024, Coles 2001, Fournier–Guillin 2015, Genevay et al. 2019,
-Gibbs–Candès 2021, Goemans–Williamson 1995, Gretton et al. 2012,
-Hansen–Ghrist 2019, Liang et al. 2023, Mohri–Hashimoto 2024, Rebedea et al.
-2023, Tibshirani et al. 2019, Vovk 2021, Yadkori et al. 2024, Zhou et al.
-2023) were carried over from the earlier manuscript and are standard, widely
-cited works; volume and page numbers were completed where known. If a fully
-independent audit is wanted, these seventeen should be re-checked against
-their publisher pages as well.
+### Defects found and corrected
+
+**D-1. `cofact2026` had no author list.** The entry read "CoFact: Conformal
+factuality guarantees for language models under covariate shift. ICLR, 2026."
+The paper is real (ICLR 2026; OpenReview `eiBp7rsc3K`) but an author-less
+reference is a citation defect. Authors recovered from the ICLR programme
+page: **Zirui Hu, Zheng Zhang, Yingjie Wang, Leszek Rutkowski, Dacheng Tao.**
+
+**D-2. `yadkori2024` had a wrong and misleadingly truncated author list.** The
+entry read "Y. Abbasi Yadkori, I. Kuzborskij, A. György, and C. Szepesvári" —
+four names joined by *and*, which asserts a complete list. The paper has
+**twelve** authors, and the surname is hyphenated (*Abbasi-Yadkori*). Corrected
+to the full list: Abbasi-Yadkori, Kuzborskij, Stutz, György, Fisch, Doucet,
+Beloshapka, Weng, Yang, Szepesvári, Cemgil, Tomasev.
+
+### Incomplete fields completed (all newly verified, none written from memory)
+
+`cherian2024` pages 114812–114842 · `gibbs2021` pages 1660–1672 ·
+`genevay2019` PMLR 89:1574–1583 · `tibshirani2019` pages 2526–2536 ·
+`rebedea2023` pages 431–445 · `hansen2019` issue 3(4) · `fournier2015` issue
+162(3–4) · `ghrist2022` 24(1):325–345 · `coles2001` series name ·
+`liang2023` lead authors named rather than "P. Liang et al."
+
+### Correction to my own earlier additions
+
+`goemans1995`: I had written the issue number as 42**(6)**. Volume 42 and
+pages 1115–1145 are confirmed by the ACM Digital Library entry, but the issue
+number was not independently confirmed, so it has been **removed** rather than
+left as an unverified assertion.
+
+### Audit table
+
+| Key | Verified against | Result |
+|---|---|---|
+| `aho1972` | SIAM J. Comput. record | ✓ 1(4):305–312, 1972 exact |
+| `andoni2018` | Ann. Sci. ÉNS / BGU portal; arXiv:1509.08677 | ✓ 51(3):657–700 exact |
+| `cherian2024` | NeurIPS 2024 proceedings page | ✓ real; pages added |
+| `cofact2026` | ICLR 2026 programme; OpenReview | ✓ real; **authors added (D-1)** |
+| `coles2001` | Springer / ISBN 9781852334598 | ✓ real; series added |
+| `fournier2015` | Springer PTRF; arXiv:1312.2128 | ✓ 162:707–738 exact |
+| `genevay2019` | PMLR v89 proceedings | ✓ real; pages added |
+| `ghrist2022` | Homology Homotopy Appl.; arXiv:2007.04099 | ✓ 24(1):325–345 |
+| `gibbs2021` | NeurIPS 2021 proceedings; arXiv:2106.00170 | ✓ real; pages added |
+| `goemans1995` | ACM DL 10.1145/227683.227684 | ✓ 42:1115–1145; issue removed |
+| `gretton2012` | JMLR v13 page | ✓ 13:723–773 exact |
+| `hansen2019` | Springer JACT 10.1007/s41468-019-00038-7 | ✓ 3(4):315–358 |
+| `huntsman2024` | arXiv:2401.16713 abstract page | ✓ ID exact |
+| `liang2023` | TMLR / Princeton, HKUST portals | ✓ real; authors expanded |
+| `mohri2024` | ICML 2024 (41st ICML) proceedings | ✓ real |
+| `rebedea2023` | ACL Anthology 2023.emnlp-demo.40; DBLP | ✓ real; pages added |
+| `tibshirani2019` | NeurIPS 2019; arXiv:1904.06019 | ✓ real; pages added |
+| `vovk2021` | Project Euclid, DOI 10.1214/20-STS817 | ✓ 36(4):595–611 exact |
+| `yadkori2024` | arXiv:2405.01563 abstract page | ✓ real; **authors fixed (D-2)** |
+| `zhou2023` | arXiv:2311.07911 abstract page | ✓ ID and 8-author list exact |
+
+Verified 2026-07-22. Re-running `paper/v3_2/ref_qa.py` reproduces the
+key/citation cross-check; the source links for each row are in this session's
+search record.

@@ -11,8 +11,8 @@ before the confirmatory run.
 ## 1. Instrument report (§4.6 reporting requirements)
 
 DeBERTa-large-MNLI, fp32 (D1), temperature-scaled on MNLI validation-matched
-(n = 2,000): **T = 1.452, ECE 15-bin = 0.0112 post-calibration** (0.047
-pre-calibration), MNLI accuracy 0.917. 22,706 ordered sentence pairs scored;
+(n = 2,000): **T = 1.452, ECE 15-bin = 0.0112 post-calibration** (0.0396
+pre-calibration), MNLI accuracy 0.911. 22,706 ordered sentence pairs scored;
 per-chain caching; the instrument never received injection locations or
 distances. Corpus: 450 GSM8K training-split chains (4–10 steps).
 
@@ -172,7 +172,7 @@ Verdict: **GREEN replicated.** All three structural findings reproduce
 (V3 headline, quadrature dilution, V1 counting-equivalence), and the E2 bound
 holds again (0.0995 ≤ 0.10; ties only 6.7% under this instrument's more
 continuous scores). The instructive difference: this instrument's hedged
-false-positive rate is **nonzero** (S2 = 2.3% [0.9%, 4.8%]) and, exactly as
+false-positive rate is **nonzero** (S2 = 2.3% [0.9%, 4.7%]) and, exactly as
 the mechanism predicts, **V4's assertion-aware capability activates**
 (+0.035 ≥ the 0.03 bar) where it was vacuous under the zero-S2 instrument.
 P-B is therefore not falsified but *instrument-conditional* — switched on

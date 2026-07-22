@@ -143,10 +143,32 @@ invariance (weak Lipschitz version only).
    machine-audit with a second model as adjudicator to estimate ε_D/ε_NLI
    ranges; the Prop. 4.6 power certificate remains "pending human audit" in
    all reporting until the dual-coded audit exists.
-2. **Publication channel: SSRN revision** (author has no arXiv account; the
-   v1 preprint is already on SSRN). SSRN-ready PDF built at
-   `paper/v3_2/SSRN_Semantic_Validation_Gates_v3_2.pdf` (17 pp); upload as a
-   revision of the existing SSRN submission so the DOI/abstract page carries
-   the corrected, field-validated version.
+2. **Publication channel — REVISED 2026-07-22 after SSRN rejection.**
+   The v1 submission (*A Formal Axiomatic Framework for Semantic
+   Verification*, Abstract ID 7031058) was **declined** by SSRN on screening
+   grounds ("submission requirements / scope / submission type"; generic
+   template, no specific reason given). Consequence: **there is no posted
+   SSRN paper to revise** — the earlier plan recorded here (upload v3.2 as a
+   revision) is void.
+
+   Likely screening triggers, from the v1 document profile: 4 pages / ~1,370
+   words; **zero citations and no references section**; no related-work
+   section; no empirical content; front-matter labelled "Work in Progress —
+   Preliminary Draft"; four unproven conjectures as the main content;
+   unaffiliated author; CS/AI topic marginal to SSRN's social-science core.
+   By contrast the v3.2 manuscript is 17 pages, 20 references, with a
+   related-work section, proved propositions, and a pre-registered field
+   study — a materially different screening profile.
+
+   Path forward (decision pending):
+   (a) **TMLR** (OpenReview, rolling submissions, no page limit) as the real
+       venue for P1 — gives peer review rather than only distribution;
+   (b) **Zenodo** for an immediate citable DOI with no gatekeeping, to
+       establish the timestamp while (a) is under review;
+   (c) **TechRxiv** (IEEE) as an alternative open preprint server;
+   (d) arXiv remains possible — accounts are free; the actual barrier is
+       cs.AI/cs.LG **endorsement** from an established arXiv author;
+   (e) SSRN resubmission as a *new* submission with v3.2 is possible but
+       carries the same scope risk and is not the recommended primary route.
 3. Whether P2 is split out now or after the organic-error corpus — still
    open.
